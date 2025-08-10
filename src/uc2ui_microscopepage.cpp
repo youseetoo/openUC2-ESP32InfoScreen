@@ -1,12 +1,14 @@
 #include "uc2ui_microscopepage.h"
 #include "uc2ui_motorpage.h"
 #include "uc2ui_ledpage.h"
+#include "uc2ui_objectivepage.h"
 
 namespace uc2ui_microscopepage
 {
     lv_obj_t * tabViewMicroscopeControl;
     lv_obj_t * motorpage;
     lv_obj_t * ledpage;
+    lv_obj_t * objectivepage;
     void initUi(lv_obj_t *motoradvpage)
     {
         tabViewMicroscopeControl = lv_tabview_create(motoradvpage, LV_DIR_TOP, 40);
@@ -23,6 +25,10 @@ namespace uc2ui_microscopepage
 
         ledpage = lv_tabview_add_tab(tabViewMicroscopeControl, "Led");
         uc2ui_ledpage::initUI(ledpage);
+
+        objectivepage = lv_tabview_add_tab(tabViewMicroscopeControl, "Objective");
+        lv_obj_clear_flag(objectivepage, LV_OBJ_FLAG_SCROLLABLE);
+        uc2ui_objectivepage::initUI(objectivepage);
     }
 }
 // namespace uc2ui_motoradvpage
