@@ -70,14 +70,14 @@ namespace uc2ui_wifipage
     void network_item_clicked_cb(lv_event_t *e)
     {
         lv_obj_t *obj = lv_event_get_target(e);
-        lv_obj_t *lbl = lv_obj_get_child(obj, NULL);
+        lv_obj_t *lbl = lv_obj_get_child(obj, 0);
         networkid = lv_label_get_text(lbl);
         log_i("NetworkSSID clicked:%s", networkid);
     }
     void device_item_clicked_cb(lv_event_t *e)
     {
         lv_obj_t *obj = lv_event_get_target(e);
-        lv_obj_t *lbl = lv_obj_get_child(obj, NULL);
+        lv_obj_t *lbl = lv_obj_get_child(obj, 0);
         deviceid = lv_label_get_text(lbl);
         connectToHost(deviceid);
         log_i("DeviceId clicked:%s", deviceid);

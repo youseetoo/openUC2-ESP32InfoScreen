@@ -122,7 +122,7 @@ namespace SerialApi
                     response["type"] = "pwm_update";
                     response["data"]["channel"] = channel;
                     response["data"]["value"] = value;
-                    sendMessage(response);
+                    serial_controller::sendMessage(response);
                 }
             }
         }
