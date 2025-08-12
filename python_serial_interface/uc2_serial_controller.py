@@ -70,6 +70,7 @@ class UC2SerialController:
         self.callbacks: Dict[str, list] = {
             'status_update': [],
             'motor_update': [],
+            'pwm_update': [],
             'led_update': [],
             'objective_slot_update': [],
             'sample_position_update': [],
@@ -169,15 +170,15 @@ class UC2SerialController:
             
             if msg_type == 'status_update':
                 self._handle_status_update(data.get('data', {}))
-            elif msg_type == 'motor_update':
+            elif msg_type == 'motor_command':
                 self._handle_motor_update(data.get('data', {}))
-            elif msg_type == 'led_update':
+            elif msg_type == 'led_command':
                 self._handle_led_update(data.get('data', {}))
-            elif msg_type == 'objective_slot_update':
+            elif msg_type == 'objective_slot_command':
                 self._handle_objective_slot_update(data.get('data', {}))
-            elif msg_type == 'sample_position_update':
+            elif msg_type == 'sample_position_click':
                 self._handle_sample_position_update(data.get('data', {}))
-            elif msg_type == 'image_captured':
+            elif msg_type == 'snap_image_command':
                 self._handle_image_captured(data.get('data', {}))
             else:
                 self.logger.debug(f"Unknown message type: {msg_type}")
@@ -261,6 +262,10 @@ class UC2SerialController:
         """Register callback for motor updates"""
         self.callbacks['motor_update'].append(callback)
     
+    def on_pwm_update(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for PWM updates"""
+        self.callbacks['pwm_update'].append(callback)
+        
     def on_led_update(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for LED updates"""
         self.callbacks['led_update'].append(callback)
@@ -272,6 +277,10 @@ class UC2SerialController:
     def on_sample_position_update(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for sample position updates"""
         self.callbacks['sample_position_update'].append(callback)
+    
+    def on_sample_map_click(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for sample map click events"""
+        self.callbacks['sample_map_click'].append(callback)
     
     def on_image_captured(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for image capture events"""

@@ -21,7 +21,11 @@ namespace uc2ui_acquisitionpage {
         // Title
         lv_obj_t *title = lv_label_create(container);
         lv_label_set_text(title, "Image Acquisition");
+#if LV_FONT_MONTSERRAT_18
         lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+#else
+        lv_obj_set_style_text_font(title, LV_FONT_DEFAULT, 0);
+#endif
         lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_width(title, lv_pct(100));
         
@@ -30,7 +34,11 @@ namespace uc2ui_acquisitionpage {
         lv_obj_set_size(snap_btn, 200, 60);
         lv_obj_t *snap_label = lv_label_create(snap_btn);
         lv_label_set_text(snap_label, "CAPTURE IMAGE");
+#if LV_FONT_MONTSERRAT_18
         lv_obj_set_style_text_font(snap_label, &lv_font_montserrat_18, 0);
+#else
+        lv_obj_set_style_text_font(snap_label, LV_FONT_DEFAULT, 0);
+#endif
         lv_obj_center(snap_label);
         lv_obj_add_event_cb(snap_btn, capture_button_cb, LV_EVENT_CLICKED, NULL);
         
@@ -43,7 +51,11 @@ namespace uc2ui_acquisitionpage {
         
         lv_obj_t *settings_title = lv_label_create(settings_container);
         lv_label_set_text(settings_title, "Acquisition Settings");
+#if LV_FONT_MONTSERRAT_18
         lv_obj_set_style_text_font(settings_title, &lv_font_montserrat_18, 0);
+#else
+        lv_obj_set_style_text_font(settings_title, LV_FONT_DEFAULT, 0);
+#endif
         
         lv_obj_t *exposure_label = lv_label_create(settings_container);
         lv_label_set_text(exposure_label, "Exposure: Auto");
@@ -57,7 +69,11 @@ namespace uc2ui_acquisitionpage {
         // Info text
         lv_obj_t *info = lv_label_create(container);
         lv_label_set_text(info, "Configure capture settings and trigger image acquisition");
+#if LV_FONT_MONTSERRAT_18
         lv_obj_set_style_text_font(info, &lv_font_montserrat_18, 0);
+#else
+        lv_obj_set_style_text_font(info, LV_FONT_DEFAULT, 0);
+#endif
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(info, lv_color_hex(0x666666), 0);
         lv_obj_set_width(info, lv_pct(100));

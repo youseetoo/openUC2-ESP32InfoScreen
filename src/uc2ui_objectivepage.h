@@ -8,4 +8,5 @@ namespace uc2ui_objectivepage
     void setOnSlotChangeListener(void slotChangeListener(int slot));
     void setOnSnapButtonListener(void snapButtonListener());
     void updateSampleMap(float x, float y);
+    void testSampleMapPositions(); // Test function for debugging
 }; // namespace uc2ui_objectivepage

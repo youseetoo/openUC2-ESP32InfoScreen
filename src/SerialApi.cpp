@@ -2,6 +2,7 @@
 #include "serial_controller.h"
 #include "uc2ui_ledpage.h"
 #include "uc2ui_motorpage.h"
+#include "uc2ui_objectivepage.h"
 #include "uc2ui_controller.h"
 #include <ArduinoJson.h>
 
@@ -30,12 +31,18 @@ namespace SerialApi
     static QueueHandle_t driveMotorXYForeverQueue;
     const int QueueElementSize = 2;
     xTaskHandle xHandle;
+    
+    // Mutex for serial communication to prevent race conditions
+    static SemaphoreHandle_t serialMutex = nullptr;
 
     // Speed mapping array (same as RestApi)
     int speeds[] = {-80000, -40000, -8000, -4000, -2000, -1000, -500, -200, -100, -50, -20, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 40000, 80000};
 
     void init()
     {
+        // Create mutex for serial communication
+        serialMutex = xSemaphoreCreateMutex();
+        
         updateLedColorQueue = xQueueCreate(QueueElementSize, sizeof(update_led_t));
         if (updateLedColorQueue == 0)
             log_e("Failed to create LED queue");
@@ -111,7 +118,8 @@ namespace SerialApi
                 if (data.containsKey("x") && data.containsKey("y")) {
                     float x = data["x"];
                     float y = data["y"];
-                    // Update sample map position
+                    // Update sample map position in objective page
+                    uc2ui_objectivepage::updateSampleMap(x, y);
                 }
             }
             else if (type == "pwm_command" && doc.containsKey("data")) {
@@ -133,9 +141,13 @@ namespace SerialApi
 
     void sendMessage(const DynamicJsonDocument& doc)
     {
-        String message;
-        serializeJson(doc, message);
-        serial_controller::sendMessage(message);
+        // Take mutex to prevent race conditions in serial communication
+        if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
+            String message;
+            serializeJson(doc, message);
+            serial_controller::sendMessage(message);
+            xSemaphoreGive(serialMutex);
+        }
     }
 
     void updateColors(int r, int g, int b)
@@ -213,6 +225,8 @@ namespace SerialApi
                     doc["data"]["motor"] = m.motor;
                     doc["data"]["speed"] = m.speed;
                     sendMessage(doc);
+                    // Add small delay to prevent overwhelming the serial interface
+                    delay(5);
                 }
             }
 
@@ -226,6 +240,8 @@ namespace SerialApi
                     doc["data"]["speedX"] = m.speedX;
                     doc["data"]["speedY"] = m.speedY;
                     sendMessage(doc);
+                    // Add small delay to prevent overwhelming the serial interface
+                    delay(5);
                 }
             }
 

@@ -41,6 +41,11 @@ def main():
         print(f"🔧 Motor Update: X={positions.get('x', 0)}, "
               f"Y={positions.get('y', 0)}, Z={positions.get('z', 0)}")
     
+    def on_pwm_update(data):
+        channel = data.get('channel', 0)
+        value = data.get('value', 0)
+        print(f"🔌 PWM Update: Channel {channel}, Value {value}"
+              )
     def on_objective_slot_update(data):
         slot = data.get('current_slot', 1)
         print(f"🔬 Objective Slot: {slot}")
@@ -61,6 +66,7 @@ def main():
     controller.on_status_update(on_status_update)
     controller.on_led_update(on_led_update)
     controller.on_motor_update(on_motor_update)
+    controller.on_pwm_update(on_pwm_update)
     controller.on_objective_slot_update(on_objective_slot_update)
     controller.on_sample_position_update(on_sample_position_update)
     controller.on_image_captured(on_image_captured)

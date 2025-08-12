@@ -165,6 +165,7 @@ namespace uc2ui_objectivepage
         lv_style_set_bg_color(&map_style, lv_color_hex(0x333333));
         lv_style_set_border_color(&map_style, lv_color_hex(0x666666));
         lv_style_set_border_width(&map_style, 2);
+        lv_style_set_pad_all(&map_style, 4); // Add consistent padding
         lv_obj_add_style(sampleMapCanvas, &map_style, 0);
 
         // Position indicator dot
@@ -228,19 +229,62 @@ namespace uc2ui_objectivepage
         current_y = y;
         
         if (positionDot != nullptr && sampleMapCanvas != nullptr) {
-            // Map position to canvas coordinates (assuming normalized coordinates 0-1)
+            // Get canvas dimensions
             int canvas_width = lv_obj_get_width(sampleMapCanvas);
             int canvas_height = lv_obj_get_height(sampleMapCanvas);
             
-            int dot_x = (int)(x * canvas_width);
-            int dot_y = (int)(y * canvas_height);
+            // Account for border and padding
+            lv_coord_t border_width = lv_obj_get_style_border_width(sampleMapCanvas, LV_PART_MAIN);
+            lv_coord_t pad_left = lv_obj_get_style_pad_left(sampleMapCanvas, LV_PART_MAIN);
+            lv_coord_t pad_top = lv_obj_get_style_pad_top(sampleMapCanvas, LV_PART_MAIN);
+            lv_coord_t pad_right = lv_obj_get_style_pad_right(sampleMapCanvas, LV_PART_MAIN);
+            lv_coord_t pad_bottom = lv_obj_get_style_pad_bottom(sampleMapCanvas, LV_PART_MAIN);
             
-            // Clamp to canvas boundaries
-            dot_x = dot_x < 4 ? 4 : (dot_x > canvas_width - 4 ? canvas_width - 4 : dot_x);
-            dot_y = dot_y < 4 ? 4 : (dot_y > canvas_height - 4 ? canvas_height - 4 : dot_y);
+            // Calculate usable content area
+            int content_width = canvas_width - (border_width * 2) - pad_left - pad_right;
+            int content_height = canvas_height - (border_width * 2) - pad_top - pad_bottom;
             
-            lv_obj_set_x(positionDot, dot_x - 4); // Center the dot
-            lv_obj_set_y(positionDot, dot_y - 4);
+            // Map position to content coordinates (normalized coordinates 0-1)
+            int dot_x = border_width + pad_left + (int)(x * content_width);
+            int dot_y = border_width + pad_top + (int)(y * content_height);
+            
+            // Account for dot size (4px radius = 8px diameter)
+            int dot_radius = 4;
+            
+            // Clamp to content boundaries
+            dot_x = dot_x < (border_width + pad_left + dot_radius) ? 
+                    (border_width + pad_left + dot_radius) : 
+                    (dot_x > (canvas_width - border_width - pad_right - dot_radius) ? 
+                     (canvas_width - border_width - pad_right - dot_radius) : dot_x);
+                     
+            dot_y = dot_y < (border_width + pad_top + dot_radius) ? 
+                    (border_width + pad_top + dot_radius) : 
+                    (dot_y > (canvas_height - border_width - pad_bottom - dot_radius) ? 
+                     (canvas_height - border_width - pad_bottom - dot_radius) : dot_y);
+            
+            // Set position relative to canvas (center the dot)
+            lv_obj_set_x(positionDot, dot_x - dot_radius);
+            lv_obj_set_y(positionDot, dot_y - dot_radius);
         }
+    }
+    
+    void testSampleMapPositions()
+    {
+        // Test different positions to verify coordinate mapping
+        // This function can be called for debugging
+        static int test_step = 0;
+        float test_positions[][2] = {
+            {0.0f, 0.0f},   // Top-left corner
+            {1.0f, 0.0f},   // Top-right corner
+            {0.0f, 1.0f},   // Bottom-left corner
+            {1.0f, 1.0f},   // Bottom-right corner
+            {0.5f, 0.5f},   // Center
+            {0.3f, 0.7f}    // Test position from Python example
+        };
+        
+        int num_positions = sizeof(test_positions) / sizeof(test_positions[0]);
+        updateSampleMap(test_positions[test_step % num_positions][0], 
+                       test_positions[test_step % num_positions][1]);
+        test_step++;
     }
 }; // namespace uc2ui_objectivepage
