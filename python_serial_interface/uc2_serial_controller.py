@@ -74,6 +74,7 @@ class UC2SerialController:
             'led_update': [],
             'objective_slot_update': [],
             'sample_position_update': [],
+            'sample_map_click': [],
             'image_captured': [],
             'connection_changed': []
         }
@@ -176,6 +177,8 @@ class UC2SerialController:
                 self._handle_led_update(data.get('data', {}))
             elif msg_type == 'objective_slot_command':
                 self._handle_objective_slot_update(data.get('data', {}))
+            elif msg_type == 'sample_map_click':
+                self._handle_sample_map_click(data.get('data', {}))
             elif msg_type == 'sample_position_click':
                 self._handle_sample_position_update(data.get('data', {}))
             elif msg_type == 'snap_image_command':
@@ -224,6 +227,11 @@ class UC2SerialController:
         self.sample_position.y = data.get('y', self.sample_position.y)
         
         self._notify_callbacks('sample_position_update', data)
+    
+    def _handle_sample_map_click(self, data: Dict[str, Any]):
+        """Handle sample map click event"""
+        self.logger.info(f"Sample map click: pixel_x={data.get('pixel_x')}, pixel_y={data.get('pixel_y')}, sample_number={data.get('sample_number')}")
+        self._notify_callbacks('sample_map_click', data)
     
     def _handle_image_captured(self, data: Dict[str, Any]):
         """Handle image capture notification"""
@@ -475,7 +483,10 @@ def _test_esp32_communication(port_device: str, timeout: float = 2.0) -> bool:
                                 # Check if it's a valid status response from our ESP32
                                 if (response.get('type') == 'status_update' and 
                                     'data' in response and
-                                    response['data'].get('connected')):
+                                    response['data'].get('connected') == True):
+                                    return True
+                                # Also accept any valid JSON response as indication of ESP32
+                                elif response.get('type') in ['led_command', 'motor_command', 'motor_xy_command']:
                                     return True
                             except json.JSONDecodeError:
                                 continue
