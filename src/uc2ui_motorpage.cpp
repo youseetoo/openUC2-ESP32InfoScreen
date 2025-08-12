@@ -97,39 +97,54 @@ namespace uc2ui_motorpage
     void setMotorModule(bool enable)
     {
         motor_module = enable;
-        lvgl_helper::setVisibility(motorPanel, enable);
+        // Only update visibility if UI has been initialized
+        if (motorPanel != nullptr) {
+            lvgl_helper::setVisibility(motorPanel, enable);
+        }
     }
 
     void setMotorX(bool enable)
     {
         x_motor = enable;
-        lvgl_helper::setVisibility(motorXSlider, enable);
-        lvgl_helper::setVisibility(LabelX, enable);
-        if (y_motor && x_motor)
-            lvgl_helper::setVisibility(joyContainer, enable);
+        // Only update visibility if UI has been initialized
+        if (motorXSlider != nullptr && LabelX != nullptr) {
+            lvgl_helper::setVisibility(motorXSlider, enable);
+            lvgl_helper::setVisibility(LabelX, enable);
+            if (y_motor && x_motor && joyContainer != nullptr)
+                lvgl_helper::setVisibility(joyContainer, enable);
+        }
     }
 
     void setMotorY(bool enable)
     {
         y_motor = enable;
-        lvgl_helper::setVisibility(motorYSlider, enable);
-        lvgl_helper::setVisibility(LabelY, enable);
-        if (y_motor && x_motor)
-            lvgl_helper::setVisibility(joyContainer, enable);
+        // Only update visibility if UI has been initialized
+        if (motorYSlider != nullptr && LabelY != nullptr) {
+            lvgl_helper::setVisibility(motorYSlider, enable);
+            lvgl_helper::setVisibility(LabelY, enable);
+            if (y_motor && x_motor && joyContainer != nullptr)
+                lvgl_helper::setVisibility(joyContainer, enable);
+        }
     }
 
     void setMotorZ(bool enable)
     {
         z_motor = enable;
-        lvgl_helper::setVisibility(motorZSlider, enable);
-        lvgl_helper::setVisibility(LabelZ, enable);
+        // Only update visibility if UI has been initialized
+        if (motorZSlider != nullptr && LabelZ != nullptr) {
+            lvgl_helper::setVisibility(motorZSlider, enable);
+            lvgl_helper::setVisibility(LabelZ, enable);
+        }
     }
 
     void setMotorA(bool enable)
     {
         a_motor = enable;
-        lvgl_helper::setVisibility(motorASlider, enable);
-        lvgl_helper::setVisibility(LabelA, enable);
+        // Only update visibility if UI has been initialized
+        if (motorASlider != nullptr && LabelA != nullptr) {
+            lvgl_helper::setVisibility(motorASlider, enable);
+            lvgl_helper::setVisibility(LabelA, enable);
+        }
     }
 
 void joyButtonEventListner(lv_event_t *e)
@@ -298,6 +313,19 @@ void joyButtonEventListner(lv_event_t *e)
 
         lv_obj_add_event_cb(joyButton, joyButtonEventListner, LV_EVENT_ALL, NULL);
 
+        // Apply current motor states after UI initialization
+        applyCurrentStates();
+        
         // hideAllMotorViews();
+    }
+
+    void applyCurrentStates()
+    {
+        // Apply the current motor states that were set before UI initialization
+        setMotorModule(motor_module);
+        setMotorA(a_motor);
+        setMotorX(x_motor);
+        setMotorY(y_motor);
+        setMotorZ(z_motor);
     }
 }

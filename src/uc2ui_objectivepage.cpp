@@ -80,7 +80,8 @@ namespace uc2ui_objectivepage
         // Style current slot label
         static lv_style_t slot_style;
         lv_style_init(&slot_style);
-        lv_style_set_text_font(&slot_style, &lv_font_montserrat_16);
+        // Set font to montserrat 18, since montserrat 16 is not available
+        lv_style_set_text_font(&slot_style, &lv_font_montserrat_18);
         lv_style_set_text_color(&slot_style, lv_color_hex(0x0099ff));
         lv_obj_add_style(currentSlotLabel, &slot_style, 0);
 

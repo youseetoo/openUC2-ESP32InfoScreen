@@ -33,16 +33,22 @@ namespace uc2ui_ledpage
     void setLedModule(bool enable)
     {
         led_module = enable;
-        lvgl_helper::setVisibility(ledPanel, enable);
+        // Only update visibility if UI has been initialized
+        if (ledPanel != nullptr) {
+            lvgl_helper::setVisibility(ledPanel, enable);
+        }
     }
 
     void setLedOn(bool on)
     {
         led_on = on;
-        if (on)
-            lv_obj_add_state(LedOnCheckBox, LV_STATE_CHECKED);
-        else
-            lv_obj_clear_state(LedOnCheckBox, LV_STATE_CHECKED);
+        // Only update state if UI has been initialized
+        if (LedOnCheckBox != nullptr) {
+            if (on)
+                lv_obj_add_state(LedOnCheckBox, LV_STATE_CHECKED);
+            else
+                lv_obj_clear_state(LedOnCheckBox, LV_STATE_CHECKED);
+        }
     }
 
     void setLedCount(int count)
@@ -180,6 +186,17 @@ namespace uc2ui_ledpage
         lvgl_helper::setVisibility(ledPanel, false);
 
         initLedPanel();
+        
+        // Apply current LED states after UI initialization
+        applyCurrentStates();
     }
 
+    void applyCurrentStates()
+    {
+        // Apply the current LED states that were set before UI initialization
+        setLedModule(led_module);
+        setLedOn(led_on);
+        // LED count doesn't need UI update, just store the value
+    }
 }
+    
