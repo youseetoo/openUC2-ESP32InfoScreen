@@ -7,6 +7,9 @@
 
 namespace SerialApi
 {
+    // Forward declaration for sendMessage
+    void sendMessage(const DynamicJsonDocument& doc);
+
     typedef struct
     {
         int r, g, b;
@@ -122,7 +125,7 @@ namespace SerialApi
                     response["type"] = "pwm_update";
                     response["data"]["channel"] = channel;
                     response["data"]["value"] = value;
-                    serial_controller::sendMessage(response);
+                    sendMessage(response);
                 }
             }
         }
