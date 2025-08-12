@@ -15,5 +15,6 @@ namespace SerialApi
     void setObjectiveSlot(int slot);
     void snapImage();
     void updateSamplePosition(float x, float y);
+    void setPwmValue(int channel, int value);
     void startSerialTask();
 };

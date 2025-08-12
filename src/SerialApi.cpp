@@ -111,6 +111,20 @@ namespace SerialApi
                     // Update sample map position
                 }
             }
+            else if (type == "pwm_command" && doc.containsKey("data")) {
+                JsonObject data = doc["data"];
+                if (data.containsKey("channel") && data.containsKey("value")) {
+                    int channel = data["channel"];
+                    int value = data["value"];
+                    // Handle PWM setting - implement hardware PWM control here
+                    // For now, just acknowledge the command
+                    DynamicJsonDocument response(256);
+                    response["type"] = "pwm_update";
+                    response["data"]["channel"] = channel;
+                    response["data"]["value"] = value;
+                    sendMessage(response);
+                }
+            }
         }
     }
 
@@ -123,7 +137,7 @@ namespace SerialApi
 
     void updateColors(int r, int g, int b)
     {
-        log_i("updateColors: r=%d, g=%d, b=%d", r, g, b);
+        // Note: Debug logging disabled to prevent JSON parsing interference  
         update_led_t led;
         led.r = r;
         led.g = g;
@@ -144,7 +158,7 @@ namespace SerialApi
 
     void driveMotorForever(int motor, int speed)
     {
-        log_i("drive motor %i at speed index %i", motor, speed);
+        // Note: Debug logging disabled to prevent JSON parsing interference  
         updateMotorForever_t m;
         
         if (uxQueueMessagesWaiting(driveMotorForeverQueue) == QueueElementSize - 1)
@@ -157,7 +171,7 @@ namespace SerialApi
 
     void driveMotorXYForever(int speedX, int speedY)
     {
-        log_i("drive XY motor speed x:%i speed y:%i", speedX, speedY);
+        // Note: Debug logging disabled to prevent JSON parsing interference
         updateMotorXYForever_t o;
         
         if (uxQueueMessagesWaiting(driveMotorXYForeverQueue) == QueueElementSize - 1)
@@ -254,6 +268,15 @@ namespace SerialApi
         doc["type"] = "sample_position_update";
         doc["data"]["x"] = x;
         doc["data"]["y"] = y;
+        sendMessage(doc);
+    }
+
+    void setPwmValue(int channel, int value)
+    {
+        DynamicJsonDocument doc(256);
+        doc["type"] = "pwm_command";
+        doc["data"]["channel"] = channel;
+        doc["data"]["value"] = value;
         sendMessage(doc);
     }
 

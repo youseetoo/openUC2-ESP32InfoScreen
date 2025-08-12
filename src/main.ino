@@ -7,6 +7,7 @@
 #include "uc2ui_ledpage.h"
 #include "uc2ui_motorpage.h"
 #include "uc2ui_objectivepage.h"
+#include "uc2ui_laserspage.h"
 
 void setup()
 {
@@ -34,6 +35,9 @@ void setup()
   // Set up new objective page handlers
   uc2ui_objectivepage::setOnSlotChangeListener(SerialApi::setObjectiveSlot);
   uc2ui_objectivepage::setOnSnapButtonListener(SerialApi::snapImage);
+
+  // Set up PWM/Lasers page handler
+  uc2ui_laserspage::setPwmUpdateCallback(SerialApi::setPwmValue);
 
   // Start the serial message task
   SerialApi::startSerialTask();

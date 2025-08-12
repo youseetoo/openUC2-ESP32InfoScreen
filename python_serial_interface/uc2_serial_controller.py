@@ -343,6 +343,21 @@ class UC2SerialController:
             }
         })
     
+    def set_pwm_value(self, channel: int, value: int):
+        """Set PWM value for laser channel (1-4, value 0-1024)"""
+        if not (1 <= channel <= 4):
+            raise ValueError("Channel must be between 1 and 4")
+        if not (0 <= value <= 1024):
+            raise ValueError("Value must be between 0 and 1024")
+            
+        return self._send_message({
+            "type": "pwm_command",
+            "data": {
+                "channel": channel,
+                "value": value
+            }
+        })
+    
     # Property accessors
     @property
     def connected(self) -> bool:
@@ -372,10 +387,10 @@ class UC2SerialController:
 
 def find_esp32_port() -> Optional[str]:
     """
-    Automatically find ESP32 serial port
+    Automatically find ESP32 serial port with device validation
     
     Returns:
-        str: Port name if found, None otherwise
+        str: Port name if found and validated, None otherwise
     """
     import serial.tools.list_ports
     
@@ -390,16 +405,78 @@ def find_esp32_port() -> Optional[str]:
     
     ports = serial.tools.list_ports.comports()
     
+    # First try ports that match ESP32 identifiers
+    candidate_ports = []
     for port in ports:
         for identifier in esp32_identifiers:
             if identifier.lower() in port.description.lower():
-                return port.device
+                candidate_ports.append(port.device)
+                break
+    
+    # If no specific match, add all available ports
+    if not candidate_ports:
+        candidate_ports = [port.device for port in ports]
+    
+    # Test each candidate port
+    for port_device in candidate_ports:
+        if _test_esp32_communication(port_device):
+            return port_device
                 
-    # If no specific match, return first available port
-    if ports:
-        return ports[0].device
-        
     return None
+
+
+def _test_esp32_communication(port_device: str, timeout: float = 2.0) -> bool:
+    """
+    Test if the device on the given port is an ESP32 running our firmware
+    
+    Args:
+        port_device: Serial port device name
+        timeout: Timeout for communication test
+        
+    Returns:
+        bool: True if ESP32 is detected and responds correctly
+    """
+    try:
+        with serial.Serial(port_device, 115200, timeout=timeout) as ser:
+            # Clear any pending data
+            ser.reset_input_buffer()
+            ser.reset_output_buffer()
+            
+            # Send a status request and wait for JSON response
+            test_message = '{"type": "status_request"}\n'
+            ser.write(test_message.encode())
+            ser.flush()
+            
+            # Wait for response
+            start_time = time.time()
+            response_buffer = ""
+            
+            while time.time() - start_time < timeout:
+                if ser.in_waiting > 0:
+                    data = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
+                    response_buffer += data
+                    
+                    # Look for JSON response
+                    lines = response_buffer.split('\n')
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('{') and line.endswith('}'):
+                            try:
+                                response = json.loads(line)
+                                # Check if it's a valid status response from our ESP32
+                                if (response.get('type') == 'status_update' and 
+                                    'data' in response and
+                                    response['data'].get('connected')):
+                                    return True
+                            except json.JSONDecodeError:
+                                continue
+                
+                time.sleep(0.1)
+                
+    except (serial.SerialException, OSError):
+        pass
+    
+    return False
 
 
 if __name__ == "__main__":
