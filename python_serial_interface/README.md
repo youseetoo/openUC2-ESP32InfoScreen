@@ -1,17 +1,30 @@
 # OpenUC2 ESP32 Serial Interface
 
-A Python package for communicating with the OpenUC2 ESP32 controller via USB Serial. This package provides bidirectional communication for microscope control including motors, LEDs, objective slots, and sample positioning.
+A Python package for communicating with the OpenUC2 ESP32 controller via USB Serial. This package provides bidirectional communication for microscope control including motors, LEDs, objective slots, sample positioning, and laser/PWM control.
 
 ## Features
 
 - **Bidirectional Serial Communication**: Send commands to ESP32 and receive status updates
+- **Enhanced Device Detection**: Validates ESP32 communication before connecting
 - **Motor Control**: Control individual stepper motors and XY stage movements  
 - **LED Control**: Set LED colors and brightness
 - **Objective Slot Management**: Switch between objective slots (1 and 2)
 - **Sample Position Tracking**: Display and update sample position on a map
+- **PWM/Laser Control**: Control 4 PWM channels with 0-1024 range for laser intensity
 - **Image Capture**: Trigger image capture with snap button
-- **Callback System**: Register callbacks for various events (motor updates, LED changes, etc.)
-- **Auto Port Detection**: Automatically find ESP32 serial port
+- **Callback System**: Register callbacks for various events (motor updates, LED changes, PWM updates, etc.)
+- **Auto Port Detection**: Automatically find and validate ESP32 serial port
+- **Clean JSON Protocol**: Proper separation of debug logs and command messages
+
+## Enhanced UI Structure
+
+The ESP32 interface now features individual tabs instead of nested structure:
+- **Motor**: Individual motor control and XY stage movements
+- **LED**: Color picker and brightness controls  
+- **Objective**: Slot switching and snap button
+- **Sample Map**: Visual position display with red indicator
+- **Lasers**: PWM channels 1-4 with 0-1024 sliders
+- **Acquisition**: Image capture settings and controls
 
 ## Installation
 
@@ -53,6 +66,10 @@ if controller.connect():
     
     # Switch objective slots
     controller.set_objective_slot(2)
+    
+    # Control PWM/Lasers (NEW)
+    controller.set_pwm_value(1, 512)  # Channel 1, half power
+    controller.set_pwm_value(2, 1024) # Channel 2, full power
     
     # Capture image
     controller.snap_image()
