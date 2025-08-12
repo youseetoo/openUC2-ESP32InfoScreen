@@ -2,6 +2,14 @@
 #include "lvgl_helper.h"
 
 namespace uc2ui_acquisitionpage {
+    static capture_button_callback capture_callback = nullptr;
+
+    static void capture_button_cb(lv_event_t *e) {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED && capture_callback) {
+            capture_callback();
+        }
+    }
+
     void initUI(lv_obj_t *parent) {
         // Create container for acquisition controls
         lv_obj_t *container = lv_obj_create(parent);
@@ -24,6 +32,7 @@ namespace uc2ui_acquisitionpage {
         lv_label_set_text(snap_label, "CAPTURE IMAGE");
         lv_obj_set_style_text_font(snap_label, &lv_font_montserrat_18, 0);
         lv_obj_center(snap_label);
+        lv_obj_add_event_cb(snap_btn, capture_button_cb, LV_EVENT_CLICKED, NULL);
         
         // Settings placeholder
         lv_obj_t *settings_container = lv_obj_create(container);
@@ -52,5 +61,9 @@ namespace uc2ui_acquisitionpage {
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(info, lv_color_hex(0x666666), 0);
         lv_obj_set_width(info, lv_pct(100));
+    }
+
+    void setCaptureButtonCallback(capture_button_callback callback) {
+        capture_callback = callback;
     }
 }

@@ -283,6 +283,16 @@ namespace SerialApi
         sendMessage(doc);
     }
 
+    void onSampleMapClick(int pixel_x, int pixel_y, int sample_number)
+    {
+        DynamicJsonDocument doc(256);
+        doc["type"] = "sample_map_click";
+        doc["data"]["pixel_x"] = pixel_x;
+        doc["data"]["pixel_y"] = pixel_y;
+        doc["data"]["sample_number"] = sample_number;
+        sendMessage(doc);
+    }
+
     // Initialize the serial message task
     void startSerialTask()
     {

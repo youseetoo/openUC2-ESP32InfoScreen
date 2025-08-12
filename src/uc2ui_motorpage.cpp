@@ -195,6 +195,21 @@ void joyButtonEventListner(lv_event_t *e)
 
     void initUI(lv_obj_t *container)
     {
+        // Create a tabview for motor controls
+        lv_obj_t *motor_tabview = lv_tabview_create(container, LV_DIR_TOP, 40);
+        lv_obj_clear_flag(lv_tabview_get_content(motor_tabview), LV_OBJ_FLAG_SCROLLABLE);
+        
+        // Tab 1: Joystick control
+        lv_obj_t *joystick_tab = lv_tabview_add_tab(motor_tabview, "Joystick");
+        initJoystickUI(joystick_tab);
+        
+        // Tab 2: Step movements
+        lv_obj_t *step_tab = lv_tabview_add_tab(motor_tabview, "Steps");
+        initStepUI(step_tab);
+    }
+
+    void initJoystickUI(lv_obj_t *container)
+    {
         motorPanel = lv_obj_create(container);
         lv_obj_set_height(motorPanel, 350);
         lv_obj_set_width(motorPanel, lv_pct(50));
@@ -327,5 +342,170 @@ void joyButtonEventListner(lv_event_t *e)
         setMotorX(x_motor);
         setMotorY(y_motor);
         setMotorZ(z_motor);
+    }
+
+    void initStepUI(lv_obj_t *container)
+    {
+        // Create container for step movement buttons
+        lv_obj_t *step_container = lv_obj_create(container);
+        lv_obj_set_size(step_container, lv_pct(100), lv_pct(100));
+        lv_obj_set_flex_flow(step_container, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(step_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_all(step_container, 20, 0);
+        
+        // Title
+        lv_obj_t *title = lv_label_create(step_container);
+        lv_label_set_text(title, "Step Movement Control");
+        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+        lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_width(title, lv_pct(100));
+        
+        // X-axis controls
+        lv_obj_t *x_container = lv_obj_create(step_container);
+        lv_obj_set_size(x_container, lv_pct(90), 80);
+        lv_obj_set_flex_flow(x_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(x_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        
+        lv_obj_t *x_label = lv_label_create(x_container);
+        lv_label_set_text(x_label, "X:");
+        lv_obj_set_style_text_font(x_label, &lv_font_montserrat_18, 0);
+        
+        lv_obj_t *x_minus_1000 = lv_btn_create(x_container);
+        lv_obj_set_size(x_minus_1000, 80, 40);
+        lv_obj_t *x_minus_1000_label = lv_label_create(x_minus_1000);
+        lv_label_set_text(x_minus_1000_label, "-1000");
+        lv_obj_center(x_minus_1000_label);
+        lv_obj_add_event_cb(x_minus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)0); // X motor, -1000
+        
+        lv_obj_t *x_minus_10 = lv_btn_create(x_container);
+        lv_obj_set_size(x_minus_10, 60, 40);
+        lv_obj_t *x_minus_10_label = lv_label_create(x_minus_10);
+        lv_label_set_text(x_minus_10_label, "-10");
+        lv_obj_center(x_minus_10_label);
+        lv_obj_add_event_cb(x_minus_10, step_button_cb, LV_EVENT_CLICKED, (void*)1); // X motor, -10
+        
+        lv_obj_t *x_plus_10 = lv_btn_create(x_container);
+        lv_obj_set_size(x_plus_10, 60, 40);
+        lv_obj_t *x_plus_10_label = lv_label_create(x_plus_10);
+        lv_label_set_text(x_plus_10_label, "+10");
+        lv_obj_center(x_plus_10_label);
+        lv_obj_add_event_cb(x_plus_10, step_button_cb, LV_EVENT_CLICKED, (void*)2); // X motor, +10
+        
+        lv_obj_t *x_plus_1000 = lv_btn_create(x_container);
+        lv_obj_set_size(x_plus_1000, 80, 40);
+        lv_obj_t *x_plus_1000_label = lv_label_create(x_plus_1000);
+        lv_label_set_text(x_plus_1000_label, "+1000");
+        lv_obj_center(x_plus_1000_label);
+        lv_obj_add_event_cb(x_plus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)3); // X motor, +1000
+        
+        // Y-axis controls
+        lv_obj_t *y_container = lv_obj_create(step_container);
+        lv_obj_set_size(y_container, lv_pct(90), 80);
+        lv_obj_set_flex_flow(y_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(y_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        
+        lv_obj_t *y_label = lv_label_create(y_container);
+        lv_label_set_text(y_label, "Y:");
+        lv_obj_set_style_text_font(y_label, &lv_font_montserrat_18, 0);
+        
+        lv_obj_t *y_minus_1000 = lv_btn_create(y_container);
+        lv_obj_set_size(y_minus_1000, 80, 40);
+        lv_obj_t *y_minus_1000_label = lv_label_create(y_minus_1000);
+        lv_label_set_text(y_minus_1000_label, "-1000");
+        lv_obj_center(y_minus_1000_label);
+        lv_obj_add_event_cb(y_minus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)4); // Y motor, -1000
+        
+        lv_obj_t *y_minus_10 = lv_btn_create(y_container);
+        lv_obj_set_size(y_minus_10, 60, 40);
+        lv_obj_t *y_minus_10_label = lv_label_create(y_minus_10);
+        lv_label_set_text(y_minus_10_label, "-10");
+        lv_obj_center(y_minus_10_label);
+        lv_obj_add_event_cb(y_minus_10, step_button_cb, LV_EVENT_CLICKED, (void*)5); // Y motor, -10
+        
+        lv_obj_t *y_plus_10 = lv_btn_create(y_container);
+        lv_obj_set_size(y_plus_10, 60, 40);
+        lv_obj_t *y_plus_10_label = lv_label_create(y_plus_10);
+        lv_label_set_text(y_plus_10_label, "+10");
+        lv_obj_center(y_plus_10_label);
+        lv_obj_add_event_cb(y_plus_10, step_button_cb, LV_EVENT_CLICKED, (void*)6); // Y motor, +10
+        
+        lv_obj_t *y_plus_1000 = lv_btn_create(y_container);
+        lv_obj_set_size(y_plus_1000, 80, 40);
+        lv_obj_t *y_plus_1000_label = lv_label_create(y_plus_1000);
+        lv_label_set_text(y_plus_1000_label, "+1000");
+        lv_obj_center(y_plus_1000_label);
+        lv_obj_add_event_cb(y_plus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)7); // Y motor, +1000
+        
+        // Z-axis controls
+        lv_obj_t *z_container = lv_obj_create(step_container);
+        lv_obj_set_size(z_container, lv_pct(90), 80);
+        lv_obj_set_flex_flow(z_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(z_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        
+        lv_obj_t *z_label = lv_label_create(z_container);
+        lv_label_set_text(z_label, "Z:");
+        lv_obj_set_style_text_font(z_label, &lv_font_montserrat_18, 0);
+        
+        lv_obj_t *z_minus_1000 = lv_btn_create(z_container);
+        lv_obj_set_size(z_minus_1000, 80, 40);
+        lv_obj_t *z_minus_1000_label = lv_label_create(z_minus_1000);
+        lv_label_set_text(z_minus_1000_label, "-1000");
+        lv_obj_center(z_minus_1000_label);
+        lv_obj_add_event_cb(z_minus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)8); // Z motor, -1000
+        
+        lv_obj_t *z_minus_10 = lv_btn_create(z_container);
+        lv_obj_set_size(z_minus_10, 60, 40);
+        lv_obj_t *z_minus_10_label = lv_label_create(z_minus_10);
+        lv_label_set_text(z_minus_10_label, "-10");
+        lv_obj_center(z_minus_10_label);
+        lv_obj_add_event_cb(z_minus_10, step_button_cb, LV_EVENT_CLICKED, (void*)9); // Z motor, -10
+        
+        lv_obj_t *z_plus_10 = lv_btn_create(z_container);
+        lv_obj_set_size(z_plus_10, 60, 40);
+        lv_obj_t *z_plus_10_label = lv_label_create(z_plus_10);
+        lv_label_set_text(z_plus_10_label, "+10");
+        lv_obj_center(z_plus_10_label);
+        lv_obj_add_event_cb(z_plus_10, step_button_cb, LV_EVENT_CLICKED, (void*)10); // Z motor, +10
+        
+        lv_obj_t *z_plus_1000 = lv_btn_create(z_container);
+        lv_obj_set_size(z_plus_1000, 80, 40);
+        lv_obj_t *z_plus_1000_label = lv_label_create(z_plus_1000);
+        lv_label_set_text(z_plus_1000_label, "+1000");
+        lv_obj_center(z_plus_1000_label);
+        lv_obj_add_event_cb(z_plus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)11); // Z motor, +1000
+    }
+
+    void step_button_cb(lv_event_t *e)
+    {
+        int button_id = (int)lv_event_get_user_data(e);
+        
+        // Map button ID to motor and step
+        int motor = 0;
+        int step = 0;
+        
+        switch(button_id) {
+            case 0: motor = 1; step = -1000; break; // X motor, -1000
+            case 1: motor = 1; step = -10; break;   // X motor, -10  
+            case 2: motor = 1; step = 10; break;    // X motor, +10
+            case 3: motor = 1; step = 1000; break;  // X motor, +1000
+            case 4: motor = 2; step = -1000; break; // Y motor, -1000
+            case 5: motor = 2; step = -10; break;   // Y motor, -10
+            case 6: motor = 2; step = 10; break;    // Y motor, +10
+            case 7: motor = 2; step = 1000; break;  // Y motor, +1000
+            case 8: motor = 3; step = -1000; break; // Z motor, -1000
+            case 9: motor = 3; step = -10; break;   // Z motor, -10
+            case 10: motor = 3; step = 10; break;   // Z motor, +10
+            case 11: motor = 3; step = 1000; break; // Z motor, +1000
+        }
+        
+        // Send step command via serial
+        if (updateMotorSpeedListner != nullptr) {
+            // Convert step to speed index for the duration of the step
+            // For step movements, we use a temporary high speed, then stop
+            int speed_index = step > 0 ? 30 : 5; // High speed forward or backward
+            updateMotorSpeedListner(motor, speed_index);
+            
+            // TODO: Add timer to stop motor after appropriate duration for the step
+        }
     }
 }

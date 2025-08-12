@@ -6,6 +6,7 @@ namespace serial_controller
 {
     serial_status current_status = serial_status::disconnected;
     String inputBuffer = "";
+    static SemaphoreHandle_t serialMutex = nullptr;
 
     void init()
     {
@@ -13,6 +14,12 @@ namespace serial_controller
         current_status = serial_status::connected;
         uc2ui_controller::showMicroscopePage(true);
         inputBuffer.reserve(1024); // Reserve space for incoming messages
+        
+        // Create mutex for serial communication synchronization
+        serialMutex = xSemaphoreCreateMutex();
+        if (serialMutex == NULL) {
+            log_e("Failed to create serial mutex");
+        }
     }
 
     void loop()
@@ -43,7 +50,15 @@ namespace serial_controller
 
     void sendMessage(const String& message)
     {
-        Serial.println(message);
-        Serial.flush();
+        // Use mutex to prevent serial message corruption from multiple tasks
+        if (serialMutex != nullptr && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+            Serial.println(message);
+            Serial.flush();
+            xSemaphoreGive(serialMutex);
+        } else {
+            // Fallback without mutex if acquisition fails
+            Serial.println(message);
+            Serial.flush();
+        }
     }
 }; // namespace serial_controller

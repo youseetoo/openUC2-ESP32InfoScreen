@@ -3,6 +3,9 @@
 namespace uc2ui_motorpage
 {
     void initUI(lv_obj_t *container);
+    void initJoystickUI(lv_obj_t *container);
+    void initStepUI(lv_obj_t *container);
+    void step_button_cb(lv_event_t *e);
     void setDriveXYMotorListner(void driveXYMotorListner(int speedX, int speedY));
     void setMotorModule(bool enable);
     void setMotorX(bool enable);

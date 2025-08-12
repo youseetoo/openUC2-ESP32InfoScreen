@@ -16,5 +16,6 @@ namespace SerialApi
     void snapImage();
     void updateSamplePosition(float x, float y);
     void setPwmValue(int channel, int value);
+    void onSampleMapClick(int pixel_x, int pixel_y, int sample_number);
     void startSerialTask();
 };

@@ -8,6 +8,8 @@
 #include "uc2ui_motorpage.h"
 #include "uc2ui_objectivepage.h"
 #include "uc2ui_laserspage.h"
+#include "uc2ui_samplemappage.h"
+#include "uc2ui_acquisitionpage.h"
 
 void setup()
 {
@@ -38,6 +40,12 @@ void setup()
 
   // Set up PWM/Lasers page handler
   uc2ui_laserspage::setPwmUpdateCallback(SerialApi::setPwmValue);
+
+  // Set up sample map click handler
+  uc2ui_samplemappage::setSampleMapClickCallback(SerialApi::onSampleMapClick);
+
+  // Set up acquisition page capture button handler  
+  uc2ui_acquisitionpage::setCaptureButtonCallback(SerialApi::snapImage);
 
   // Start the serial message task
   SerialApi::startSerialTask();
