@@ -17,5 +17,6 @@ namespace SerialApi
     void updateSamplePosition(float x, float y);
     void setPwmValue(int channel, int value);
     void onSampleMapClick(int pixel_x, int pixel_y, int sample_number);
+    void moveMotorSteps(int motor, int steps);
     void startSerialTask();
 };
