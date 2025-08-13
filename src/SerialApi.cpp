@@ -225,8 +225,8 @@ namespace SerialApi
                     doc["data"]["motor"] = m.motor;
                     doc["data"]["speed"] = m.speed;
                     sendMessage(doc);
-                    // Add small delay to prevent overwhelming the serial interface
-                    delay(5);
+                    // Add delay to prevent overwhelming the serial interface
+                    delay(10);
                 }
             }
 
@@ -240,12 +240,12 @@ namespace SerialApi
                     doc["data"]["speedX"] = m.speedX;
                     doc["data"]["speedY"] = m.speedY;
                     sendMessage(doc);
-                    // Add small delay to prevent overwhelming the serial interface
-                    delay(5);
+                    // Add delay to prevent overwhelming the serial interface
+                    delay(10);
                 }
             }
 
-            delay(10);
+            delay(20);
         }
     }
 
@@ -296,6 +296,15 @@ namespace SerialApi
         doc["type"] = "pwm_command";
         doc["data"]["channel"] = channel;
         doc["data"]["value"] = value;
+        sendMessage(doc);
+    }
+
+    void moveMotorSteps(int motor, int steps)
+    {
+        DynamicJsonDocument doc(256);
+        doc["type"] = "motor_step_command";
+        doc["data"]["motor"] = motor;
+        doc["data"]["steps"] = steps;
         sendMessage(doc);
     }
 

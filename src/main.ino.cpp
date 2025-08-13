@@ -36,6 +36,7 @@ void setup()
 
   uc2ui_ledpage::setColorChangedListner(SerialApi::updateColors);
   uc2ui_motorpage::setUpdateMotorSpeedListner(SerialApi::driveMotorForever);
+  uc2ui_motorpage::setMoveMotorStepsListner(SerialApi::moveMotorSteps);
   uc2ui_ledpage::setenableLedListner(SerialApi::setLedOn);
   uc2ui_motorpage::setDriveXYMotorListner(SerialApi::driveMotorXYForever);
 

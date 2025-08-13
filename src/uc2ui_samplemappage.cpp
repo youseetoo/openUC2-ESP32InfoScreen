@@ -76,17 +76,10 @@ namespace uc2ui_samplemappage {
         lv_obj_set_width(title, lv_pct(100));
         lv_obj_set_flex_grow(title, 0); // Don't grow
         
-        // Sample map container - maximize size
+        // Sample map container - use flex grow to maximize available space
         map_container = lv_obj_create(container);
-        // Calculate available height: container height minus title height and padding
-        lv_coord_t available_height = lv_obj_get_height(parent) - 60; // Account for title and padding
-        lv_coord_t available_width = lv_obj_get_width(parent) - 40; // Account for padding
-        
-        // Make it as large as possible while maintaining some aspect ratio
-        lv_coord_t map_width = available_width;
-        lv_coord_t map_height = available_height - 80; // Leave room for info text
-        
-        lv_obj_set_size(map_container, map_width, map_height);
+        lv_obj_set_width(map_container, lv_pct(95)); // Leave some margin
+        lv_obj_set_flex_grow(map_container, 1); // Take all available space
         lv_obj_set_style_border_width(map_container, 2, 0);
         lv_obj_set_style_border_color(map_container, lv_color_hex(0x333333), 0);
         lv_obj_set_style_radius(map_container, 5, 0);
@@ -94,7 +87,6 @@ namespace uc2ui_samplemappage {
         lv_obj_set_style_pad_all(map_container, 5, 0); // Minimal padding
         lv_obj_clear_flag(map_container, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_add_event_cb(map_container, map_double_tap_cb, LV_EVENT_CLICKED, NULL);
-        lv_obj_set_flex_grow(map_container, 1); // Take most available space
         
         // Red position indicator (centered initially)
         position_indicator = lv_obj_create(map_container);

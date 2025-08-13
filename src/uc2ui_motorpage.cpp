@@ -29,10 +29,16 @@ namespace uc2ui_motorpage
     int joybutton_real_x_pos;
 
     void (*updateMotorSpeedListner)(int motor, int speed);
+    void (*moveMotorStepsListner)(int motor, int steps);
 
     void setUpdateMotorSpeedListner(void updateMotorSpeed(int motor, int speed))
     {
         updateMotorSpeedListner = updateMotorSpeed;
+    }
+
+    void setMoveMotorStepsListner(void moveMotorSteps(int motor, int steps))
+    {
+        moveMotorStepsListner = moveMotorSteps;
     }
 
     void (*driveXYMotor)(int speedX, int speedY);
@@ -498,14 +504,9 @@ void joyButtonEventListner(lv_event_t *e)
             case 11: motor = 3; step = 1000; break; // Z motor, +1000
         }
         
-        // Send step command via serial
-        if (updateMotorSpeedListner != nullptr) {
-            // Convert step to speed index for the duration of the step
-            // For step movements, we use a temporary high speed, then stop
-            int speed_index = step > 0 ? 30 : 5; // High speed forward or backward
-            updateMotorSpeedListner(motor, speed_index);
-            
-            // TODO: Add timer to stop motor after appropriate duration for the step
+        // Send step command via serial (positions, not speeds)
+        if (moveMotorStepsListner != nullptr) {
+            moveMotorStepsListner(motor, step);
         }
     }
 }

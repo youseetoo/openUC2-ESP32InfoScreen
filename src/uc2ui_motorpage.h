@@ -13,5 +13,6 @@ namespace uc2ui_motorpage
     void setMotorZ(bool enable);
     void setMotorA(bool enable);
     void setUpdateMotorSpeedListner(void updateMotorSpeed(int motor, int speed));
+    void setMoveMotorStepsListner(void moveMotorSteps(int motor, int steps));
     void applyCurrentStates(); // Apply motor states after UI initialization
 }; // namespace uc2ui_motorpage
