@@ -119,7 +119,7 @@ namespace SerialApi
                     float x = data["x"];
                     float y = data["y"];
                     // Update sample map position in objective page
-                    uc2ui_objectivepage::updateSampleMap(x, y);
+                    //uc2ui_objectivepage::updateSampleMap(x, y);
                 }
             }
             else if (type == "pwm_command" && doc.containsKey("data")) {

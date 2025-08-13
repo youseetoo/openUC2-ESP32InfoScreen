@@ -36,7 +36,7 @@ void setup()
   
   // Set up new objective page handlers
   uc2ui_objectivepage::setOnSlotChangeListener(SerialApi::setObjectiveSlot);
-  uc2ui_objectivepage::setOnSnapButtonListener(SerialApi::snapImage);
+
 
   // Set up PWM/Lasers page handler
   uc2ui_laserspage::setPwmUpdateCallback(SerialApi::setPwmValue);
