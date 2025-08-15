@@ -24,23 +24,23 @@ namespace uc2ui_wifipage
     char *networkid;
     char*deviceid;
 
-    void setOnSearchDeviceButtonClickListner(void searchDeviceListner())
+    void setOnSearchDeviceButtonClickListner(void (*searchDeviceListner)())
     {
         _searchDeviceButtonListner = searchDeviceListner;
     }
 
-    void setOnScanButtonClickListner(void scanbuttonListner())
+    void setOnScanButtonClickListner(void (*scanbuttonListner)())
     {
         _scanButtonListner = scanbuttonListner;
     }
-    void setOnWifiConnectButtonClickListner(void wifiConnectButtonListner(char *, const char *))
+    void setOnWifiConnectButtonClickListner(void (*wifiConnectButtonListner)(char *, const char *))
     {
         _wifiConnectButtonListner = wifiConnectButtonListner;
     }
 
     void (*connectToHost)(char* s);
 
-    void setConnectToHostListner(void contoHst(char* s))
+    void setConnectToHostListner(void (*contoHst)(char* s))
     {
         connectToHost = contoHst;
     }
@@ -89,7 +89,7 @@ namespace uc2ui_wifipage
         lv_led_set_color(statusLED, lv_palette_main(static_cast<lv_palette_t>(lv_pallet_color)));
     }
 
-    void init_ui(lv_obj_t *wifiPage, void func(lv_event_t *ob))
+    void init_ui(lv_obj_t *wifiPage, void (*func)(lv_event_t *ob))
     {
         fev = func;
         buttonScan = lv_btn_create(wifiPage);

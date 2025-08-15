@@ -9,7 +9,7 @@ namespace uc2ui_motorpage
     bool x_motor = false;
     bool y_motor = false;
     bool z_motor = false;
-    lv_obj_t *motorPanel;;
+    lv_obj_t *motorPanel;
     lv_obj_t *motorASlider;
     lv_obj_t *motorXSlider;
     lv_obj_t *motorYSlider;
@@ -30,14 +30,14 @@ namespace uc2ui_motorpage
 
     void (*updateMotorSpeedListner)(int motor, int speed);
 
-    void setUpdateMotorSpeedListner(void updateMotorSpeed(int motor, int speed))
+    void setUpdateMotorSpeedListner(void (*updateMotorSpeed)(int motor, int speed))
     {
         updateMotorSpeedListner = updateMotorSpeed;
     }
 
     void (*driveXYMotor)(int speedX, int speedY);
 
-    void setDriveXYMotorListner(void driveXYMotorListner(int speedX, int speedY))
+    void setDriveXYMotorListner(void (*driveXYMotorListner)(int speedX, int speedY))
     {
         driveXYMotor = driveXYMotorListner;
     }
