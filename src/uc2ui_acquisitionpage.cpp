@@ -2,6 +2,19 @@
 #include "lvgl_helper.h"
 
 namespace uc2ui_acquisitionpage {
+    // Callback function pointer storage
+    capture_button_callback capture_callback = nullptr;
+    
+    // Event handler for capture button
+    static void capture_button_event_handler(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+        if (code == LV_EVENT_CLICKED) {
+            if (capture_callback != nullptr) {
+                capture_callback();
+            }
+        }
+    }
+    
     void initUI(lv_obj_t *parent) {
         // Create container for acquisition controls
         lv_obj_t *container = lv_obj_create(parent);
@@ -24,6 +37,9 @@ namespace uc2ui_acquisitionpage {
         lv_label_set_text(snap_label, "CAPTURE IMAGE");
         lv_obj_set_style_text_font(snap_label, &lv_font_montserrat_18, 0);
         lv_obj_center(snap_label);
+        
+        // Add event callback to capture button
+        lv_obj_add_event_cb(snap_btn, capture_button_event_handler, LV_EVENT_ALL, NULL);
         
         // Settings placeholder
         lv_obj_t *settings_container = lv_obj_create(container);
