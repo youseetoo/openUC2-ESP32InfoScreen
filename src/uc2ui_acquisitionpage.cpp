@@ -2,6 +2,7 @@
 #include "lvgl_helper.h"
 
 namespace uc2ui_acquisitionpage {
+    static capture_button_callback capture_callback = nullptr;
     void initUI(lv_obj_t *parent) {
         // Create container for acquisition controls
         lv_obj_t *container = lv_obj_create(parent);

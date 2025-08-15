@@ -3,6 +3,10 @@
 #include "uc2ui_ledpage.h"
 #include "uc2ui_motorpage.h"
 #include "uc2ui_controller.h"
+#include "uc2ui_objectivepage.h"
+#include "uc2ui_samplemappage.h"
+#include "uc2ui_laserspage.h"
+#include "uc2ui_acquisitionpage.h"
 #include <ArduinoJson.h>
 
 namespace SerialApi
@@ -97,7 +101,9 @@ namespace SerialApi
                 response["data"]["r"] = r;
                 response["data"]["g"] = g; 
                 response["data"]["b"] = b;
-                sendMessage(response);
+                String responseStr;
+                serializeJson(response, responseStr);
+                serial_controller::sendMessage(responseStr);
             }
             else if (type == "motor_step_command" && doc.containsKey("data")) {
                 JsonObject data = doc["data"];
@@ -113,7 +119,9 @@ namespace SerialApi
                     response["type"] = "motor_step_update";
                     response["data"]["motor"] = motor;
                     response["data"]["steps"] = steps;
-                    sendMessage(response);
+                    String responseStr;
+                    serializeJson(response, responseStr);
+                    serial_controller::sendMessage(responseStr);
                 }
             }
             else if (type == "objective_slot_command" && doc.containsKey("data")) {
@@ -127,7 +135,9 @@ namespace SerialApi
                     DynamicJsonDocument response(256);
                     response["type"] = "objective_slot_update";
                     response["data"]["current_slot"] = slot;
-                    sendMessage(response);
+                    String responseStr;
+                    serializeJson(response, responseStr);
+                    serial_controller::sendMessage(responseStr);
                 }
             }
             else if (type == "sample_position_command" && doc.containsKey("data")) {
@@ -143,7 +153,9 @@ namespace SerialApi
                     response["type"] = "sample_position_update";
                     response["data"]["x"] = x;
                     response["data"]["y"] = y;
-                    sendMessage(response);
+                    String responseStr;
+                    serializeJson(response, responseStr);
+                    serial_controller::sendMessage(responseStr);
                 }
             }
             else if (type == "pwm_command" && doc.containsKey("data")) {
@@ -160,7 +172,9 @@ namespace SerialApi
                     response["type"] = "pwm_update";
                     response["data"]["channel"] = channel;
                     response["data"]["value"] = value;
-                    sendMessage(response);
+                    String responseStr;
+                    serializeJson(response, responseStr);
+                    serial_controller::sendMessage(responseStr);
                 }
             }
             else if (type == "snap_image_command") {
@@ -170,7 +184,9 @@ namespace SerialApi
                 // Send acknowledgment
                 DynamicJsonDocument response(256);
                 response["type"] = "image_captured";
-                sendMessage(response);
+                String responseStr;
+                serializeJson(response, responseStr);
+                serial_controller::sendMessage(responseStr);
             }
         }
     }
