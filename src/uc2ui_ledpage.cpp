@@ -177,24 +177,6 @@ namespace uc2ui_ledpage
 
     void initUI(lv_obj_t *container)
     {
-        // Create a tabview for LED controls
-        lv_obj_t *led_tabview = lv_tabview_create(container, LV_DIR_TOP, 40);
-        lv_obj_clear_flag(lv_tabview_get_content(led_tabview), LV_OBJ_FLAG_SCROLLABLE);
-        
-        // Tab 1: RGB color control
-        lv_obj_t *color_tab = lv_tabview_add_tab(led_tabview, "RGB");
-        initRGBUI(color_tab);
-        
-        // Tab 2: LED patterns
-        lv_obj_t *pattern_tab = lv_tabview_add_tab(led_tabview, "Patterns");
-        initPatternUI(pattern_tab);
-        
-        // Apply current LED states after UI initialization
-        applyCurrentStates();
-    }
-
-    void initRGBUI(lv_obj_t *container)
-    {
         ledPanel = lv_obj_create(container);
         lv_obj_set_height(ledPanel, lv_pct(100));
         lv_obj_set_width(ledPanel, lv_pct(100));
@@ -204,6 +186,9 @@ namespace uc2ui_ledpage
         lvgl_helper::setVisibility(ledPanel, false);
 
         initLedPanel();
+        
+        // Apply current LED states after UI initialization
+        applyCurrentStates();
     }
 
     void applyCurrentStates()
@@ -212,147 +197,6 @@ namespace uc2ui_ledpage
         setLedModule(led_module);
         setLedOn(led_on);
         // LED count doesn't need UI update, just store the value
-    }
-
-    void initPatternUI(lv_obj_t *container)
-    {
-        // Create container for LED pattern buttons
-        lv_obj_t *pattern_container = lv_obj_create(container);
-        lv_obj_set_size(pattern_container, lv_pct(100), lv_pct(100));
-        lv_obj_set_flex_flow(pattern_container, LV_FLEX_FLOW_COLUMN);
-        lv_obj_set_flex_align(pattern_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_set_style_pad_all(pattern_container, 20, 0);
-        
-        // Title
-        lv_obj_t *title = lv_label_create(pattern_container);
-        lv_label_set_text(title, "LED Pattern Control");
-        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
-        lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
-        lv_obj_set_width(title, lv_pct(100));
-        
-        // Directional buttons row
-        lv_obj_t *direction_container = lv_obj_create(pattern_container);
-        lv_obj_set_size(direction_container, lv_pct(90), 80);
-        lv_obj_set_flex_flow(direction_container, LV_FLEX_FLOW_ROW);
-        lv_obj_set_flex_align(direction_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        
-        // Top button
-        lv_obj_t *top_btn = lv_btn_create(direction_container);
-        lv_obj_set_size(top_btn, 80, 50);
-        lv_obj_t *top_label = lv_label_create(top_btn);
-        lv_label_set_text(top_label, "Top");
-        lv_obj_center(top_label);
-        lv_obj_add_event_cb(top_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)0);
-        
-        // Bottom button
-        lv_obj_t *bottom_btn = lv_btn_create(direction_container);
-        lv_obj_set_size(bottom_btn, 80, 50);
-        lv_obj_t *bottom_label = lv_label_create(bottom_btn);
-        lv_label_set_text(bottom_label, "Bottom");
-        lv_obj_center(bottom_label);
-        lv_obj_add_event_cb(bottom_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)1);
-        
-        // Left button
-        lv_obj_t *left_btn = lv_btn_create(direction_container);
-        lv_obj_set_size(left_btn, 80, 50);
-        lv_obj_t *left_label = lv_label_create(left_btn);
-        lv_label_set_text(left_label, "Left");
-        lv_obj_center(left_label);
-        lv_obj_add_event_cb(left_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)2);
-        
-        // Right button
-        lv_obj_t *right_btn = lv_btn_create(direction_container);
-        lv_obj_set_size(right_btn, 80, 50);
-        lv_obj_t *right_label = lv_label_create(right_btn);
-        lv_label_set_text(right_label, "Right");
-        lv_obj_center(right_label);
-        lv_obj_add_event_cb(right_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)3);
-        
-        // Ring buttons row
-        lv_obj_t *ring_container = lv_obj_create(pattern_container);
-        lv_obj_set_size(ring_container, lv_pct(90), 80);
-        lv_obj_set_flex_flow(ring_container, LV_FLEX_FLOW_ROW);
-        lv_obj_set_flex_align(ring_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        
-        // Ring 1 button
-        lv_obj_t *ring1_btn = lv_btn_create(ring_container);
-        lv_obj_set_size(ring1_btn, 80, 50);
-        lv_obj_t *ring1_label = lv_label_create(ring1_btn);
-        lv_label_set_text(ring1_label, "Ring 1");
-        lv_obj_center(ring1_label);
-        lv_obj_add_event_cb(ring1_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)4);
-        
-        // Ring 2 button
-        lv_obj_t *ring2_btn = lv_btn_create(ring_container);
-        lv_obj_set_size(ring2_btn, 80, 50);
-        lv_obj_t *ring2_label = lv_label_create(ring2_btn);
-        lv_label_set_text(ring2_label, "Ring 2");
-        lv_obj_center(ring2_label);
-        lv_obj_add_event_cb(ring2_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)5);
-        
-        // Ring 3 button
-        lv_obj_t *ring3_btn = lv_btn_create(ring_container);
-        lv_obj_set_size(ring3_btn, 80, 50);
-        lv_obj_t *ring3_label = lv_label_create(ring3_btn);
-        lv_label_set_text(ring3_label, "Ring 3");
-        lv_obj_center(ring3_label);
-        lv_obj_add_event_cb(ring3_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)6);
-        
-        // All off button
-        lv_obj_t *off_btn = lv_btn_create(pattern_container);
-        lv_obj_set_size(off_btn, 120, 50);
-        lv_obj_t *off_label = lv_label_create(off_btn);
-        lv_label_set_text(off_label, "All Off");
-        lv_obj_center(off_label);
-        lv_obj_add_event_cb(off_btn, pattern_button_cb, LV_EVENT_CLICKED, (void*)7);
-        lv_obj_set_style_bg_color(off_btn, lv_color_hex(0xFF0000), 0);
-    }
-
-    void pattern_button_cb(lv_event_t *e)
-    {
-        int pattern_id = (int)lv_event_get_user_data(e);
-        
-        // Pattern mapping:
-        // 0 = Top, 1 = Bottom, 2 = Left, 3 = Right
-        // 4 = Ring 1, 5 = Ring 2, 6 = Ring 3, 7 = All Off
-        
-        // For now, we'll send predefined RGB values for each pattern
-        // This can be customized based on hardware implementation
-        int r = 255, g = 255, b = 255;
-        bool enable = true;
-        
-        switch(pattern_id) {
-            case 0: // Top - White
-                r = 255; g = 255; b = 255;
-                break;
-            case 1: // Bottom - Blue
-                r = 0; g = 0; b = 255;
-                break;
-            case 2: // Left - Green
-                r = 0; g = 255; b = 0;
-                break;
-            case 3: // Right - Red
-                r = 255; g = 0; b = 0;
-                break;
-            case 4: // Ring 1 - Cyan
-                r = 0; g = 255; b = 255;
-                break;
-            case 5: // Ring 2 - Magenta
-                r = 255; g = 0; b = 255;
-                break;
-            case 6: // Ring 3 - Yellow
-                r = 255; g = 255; b = 0;
-                break;
-            case 7: // All Off
-                r = 0; g = 0; b = 0;
-                enable = false;
-                break;
-        }
-        
-        // Send pattern command via the LED listener
-        if (enableLedListner != nullptr) {
-            enableLedListner(enable, r, g, b);
-        }
     }
 }
     

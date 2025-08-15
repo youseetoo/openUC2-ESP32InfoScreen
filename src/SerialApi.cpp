@@ -2,15 +2,11 @@
 #include "serial_controller.h"
 #include "uc2ui_ledpage.h"
 #include "uc2ui_motorpage.h"
-#include "uc2ui_objectivepage.h"
 #include "uc2ui_controller.h"
 #include <ArduinoJson.h>
 
 namespace SerialApi
 {
-    // Forward declaration for sendMessage
-    void sendMessage(const DynamicJsonDocument& doc);
-
     typedef struct
     {
         int r, g, b;
@@ -31,18 +27,12 @@ namespace SerialApi
     static QueueHandle_t driveMotorXYForeverQueue;
     const int QueueElementSize = 2;
     xTaskHandle xHandle;
-    
-    // Mutex for serial communication to prevent race conditions
-    static SemaphoreHandle_t serialMutex = nullptr;
 
     // Speed mapping array (same as RestApi)
     int speeds[] = {-80000, -40000, -8000, -4000, -2000, -1000, -500, -200, -100, -50, -20, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 40000, 80000};
 
     void init()
     {
-        // Create mutex for serial communication
-        serialMutex = xSemaphoreCreateMutex();
-        
         updateLedColorQueue = xQueueCreate(QueueElementSize, sizeof(update_led_t));
         if (updateLedColorQueue == 0)
             log_e("Failed to create LED queue");
@@ -118,8 +108,7 @@ namespace SerialApi
                 if (data.containsKey("x") && data.containsKey("y")) {
                     float x = data["x"];
                     float y = data["y"];
-                    // Update sample map position in objective page
-                    //uc2ui_objectivepage::updateSampleMap(x, y);
+                    // Update sample map position
                 }
             }
             else if (type == "pwm_command" && doc.containsKey("data")) {
@@ -133,7 +122,7 @@ namespace SerialApi
                     response["type"] = "pwm_update";
                     response["data"]["channel"] = channel;
                     response["data"]["value"] = value;
-                    sendMessage(response);
+                    serial_controller::sendMessage(response);
                 }
             }
         }
@@ -141,13 +130,9 @@ namespace SerialApi
 
     void sendMessage(const DynamicJsonDocument& doc)
     {
-        // Take mutex to prevent race conditions in serial communication
-        if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
-            String message;
-            serializeJson(doc, message);
-            serial_controller::sendMessage(message);
-            xSemaphoreGive(serialMutex);
-        }
+        String message;
+        serializeJson(doc, message);
+        serial_controller::sendMessage(message);
     }
 
     void updateColors(int r, int g, int b)
@@ -225,8 +210,6 @@ namespace SerialApi
                     doc["data"]["motor"] = m.motor;
                     doc["data"]["speed"] = m.speed;
                     sendMessage(doc);
-                    // Add delay to prevent overwhelming the serial interface
-                    delay(10);
                 }
             }
 
@@ -240,12 +223,10 @@ namespace SerialApi
                     doc["data"]["speedX"] = m.speedX;
                     doc["data"]["speedY"] = m.speedY;
                     sendMessage(doc);
-                    // Add delay to prevent overwhelming the serial interface
-                    delay(10);
                 }
             }
 
-            delay(20);
+            delay(10);
         }
     }
 
@@ -296,25 +277,6 @@ namespace SerialApi
         doc["type"] = "pwm_command";
         doc["data"]["channel"] = channel;
         doc["data"]["value"] = value;
-        sendMessage(doc);
-    }
-
-    void moveMotorSteps(int motor, int steps)
-    {
-        DynamicJsonDocument doc(256);
-        doc["type"] = "motor_step_command";
-        doc["data"]["motor"] = motor;
-        doc["data"]["steps"] = steps;
-        sendMessage(doc);
-    }
-
-    void onSampleMapClick(int pixel_x, int pixel_y, int sample_number)
-    {
-        DynamicJsonDocument doc(256);
-        doc["type"] = "sample_map_click";
-        doc["data"]["pixel_x"] = pixel_x;
-        doc["data"]["pixel_y"] = pixel_y;
-        doc["data"]["sample_number"] = sample_number;
         sendMessage(doc);
     }
 

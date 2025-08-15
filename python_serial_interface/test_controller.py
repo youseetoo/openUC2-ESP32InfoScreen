@@ -26,7 +26,7 @@ def test_controller_without_hardware():
     print(f"✅ Connected status: {controller.connected}")
     
     # Test callback registration
-    callback_called = {'status': False, 'led': False, 'motor': False, 'sample_map_click': False}
+    callback_called = {'status': False, 'led': False, 'motor': False}
     
     def on_status_update(data):
         callback_called['status'] = True
@@ -40,14 +40,9 @@ def test_controller_without_hardware():
         callback_called['motor'] = True
         print(f"✅ Motor callback called with: {data}")
     
-    def on_sample_map_click(data):
-        callback_called['sample_map_click'] = True
-        print(f"✅ Sample map click callback called with: {data}")
-    
     controller.on_status_update(on_status_update)
     controller.on_led_update(on_led_update)
     controller.on_motor_update(on_motor_update)
-    controller.on_sample_map_click(on_sample_map_click)
     
     # Test message handling without serial connection
     print("\n📨 Testing message handling...")
@@ -58,8 +53,7 @@ def test_controller_without_hardware():
         '{"type": "led_update", "data": {"enabled": true, "r": 255, "g": 0, "b": 0}}',
         '{"type": "motor_update", "data": {"positions": {"x": 1000, "y": 2000, "z": 500}}}',
         '{"type": "objective_slot_update", "data": {"current_slot": 2}}',
-        '{"type": "sample_position_update", "data": {"x": 0.3, "y": 0.7}}',
-        '{"type": "sample_map_click", "data": {"pixel_x": 120, "pixel_y": 90, "normalized_x": 0.3, "normalized_y": 0.3, "sample_number": 12}}'
+        '{"type": "sample_position_update", "data": {"x": 0.3, "y": 0.7}}'
     ]
     
     for message in test_messages:
@@ -67,7 +61,7 @@ def test_controller_without_hardware():
         controller._handle_message(message)
     
     # Verify callbacks were called
-    print(f"\n✅ Callback tests - Status: {callback_called['status']}, LED: {callback_called['led']}, Motor: {callback_called['motor']}, Sample Map Click: {callback_called['sample_map_click']}")
+    print(f"\n✅ Callback tests - Status: {callback_called['status']}, LED: {callback_called['led']}, Motor: {callback_called['motor']}")
     
     # Test state updates
     print(f"✅ Updated LED state: {controller.led_status}")

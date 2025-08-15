@@ -16,40 +16,20 @@ namespace uc2ui_samplemappage {
             // Convert to local coordinates relative to map container
             lv_area_t area;
             lv_obj_get_coords(map_container, &area);
+            int local_x = point.x - area.x1;
+            int local_y = point.y - area.y1;
             
-            // Get the content area (excluding padding/border)
-            lv_coord_t pad_left = lv_obj_get_style_pad_left(map_container, LV_PART_MAIN);
-            lv_coord_t pad_top = lv_obj_get_style_pad_top(map_container, LV_PART_MAIN);
-            lv_coord_t border_width = lv_obj_get_style_border_width(map_container, LV_PART_MAIN);
-            
-            // Calculate local coordinates within the actual drawable area
-            int local_x = point.x - area.x1 - pad_left - border_width;
-            int local_y = point.y - area.y1 - pad_top - border_width;
-            
-            // Get the actual content dimensions
-            int content_width = lv_obj_get_content_width(map_container);
-            int content_height = lv_obj_get_content_height(map_container);
-            
-            // Clamp coordinates to valid range
-            if (local_x < 0) local_x = 0;
-            if (local_y < 0) local_y = 0;
-            if (local_x >= content_width) local_x = content_width - 1;
-            if (local_y >= content_height) local_y = content_height - 1;
-            
-            // Update position indicator (center the 20x20 dot on click point)
+            // Update position indicator
             lv_obj_set_pos(position_indicator, local_x - 10, local_y - 10);
             
             // Calculate sample number (assuming 8x6 grid)
             int grid_width = 8;
             int grid_height = 6;
+            int map_width = lv_obj_get_width(map_container);
+            int map_height = lv_obj_get_height(map_container);
             
-            int sample_x = (local_x * grid_width) / content_width;
-            int sample_y = (local_y * grid_height) / content_height;
-            
-            // Clamp sample coordinates
-            if (sample_x >= grid_width) sample_x = grid_width - 1;
-            if (sample_y >= grid_height) sample_y = grid_height - 1;
-            
+            int sample_x = (local_x * grid_width) / map_width;
+            int sample_y = (local_y * grid_height) / map_height;
             int sample_number = sample_y * grid_width + sample_x;
             
             // Call callback with pixel coordinates and sample number
@@ -65,8 +45,7 @@ namespace uc2ui_samplemappage {
         lv_obj_set_size(container, lv_pct(100), lv_pct(100));
         lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
         lv_obj_set_flex_align(container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_set_style_pad_all(container, 10, 0);
-        lv_obj_clear_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_style_pad_all(container, 20, 0);
         
         // Title
         lv_obj_t *title = lv_label_create(container);
@@ -74,18 +53,14 @@ namespace uc2ui_samplemappage {
         lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_width(title, lv_pct(100));
-        lv_obj_set_flex_grow(title, 0); // Don't grow
         
-        // Sample map container - use flex grow to maximize available space
+        // Placeholder for sample map grid
         map_container = lv_obj_create(container);
-        lv_obj_set_width(map_container, lv_pct(95)); // Leave some margin
-        lv_obj_set_flex_grow(map_container, 1); // Take all available space
+        lv_obj_set_size(map_container, 400, 300);
         lv_obj_set_style_border_width(map_container, 2, 0);
         lv_obj_set_style_border_color(map_container, lv_color_hex(0x333333), 0);
-        lv_obj_set_style_radius(map_container, 5, 0);
-        lv_obj_set_style_bg_color(map_container, lv_color_hex(0xFFFFFF), 0); // Pure white background
-        lv_obj_set_style_pad_all(map_container, 5, 0); // Minimal padding
-        lv_obj_clear_flag(map_container, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_style_radius(map_container, 10, 0);
+        lv_obj_set_style_bg_color(map_container, lv_color_hex(0xF0F0F0), 0);
         lv_obj_add_event_cb(map_container, map_double_tap_cb, LV_EVENT_CLICKED, NULL);
         
         // Red position indicator (centered initially)
@@ -98,12 +73,11 @@ namespace uc2ui_samplemappage {
         
         // Info text
         lv_obj_t *info = lv_label_create(container);
-        lv_label_set_text(info, "Click to move sample position");
+        lv_label_set_text(info, "Red dot shows current sample position\nClick to move to different positions");
         lv_obj_set_style_text_font(info, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(info, lv_color_hex(0x666666), 0);
         lv_obj_set_width(info, lv_pct(100));
-        lv_obj_set_flex_grow(info, 0); // Don't grow
     }
 
     void setSampleMapClickCallback(sample_map_click_callback callback) {

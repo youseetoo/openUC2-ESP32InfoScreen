@@ -70,13 +70,12 @@ class UC2SerialController:
         self.callbacks: Dict[str, list] = {
             'status_update': [],
             'motor_update': [],
-            'pwm_update': [],
             'led_update': [],
             'objective_slot_update': [],
             'sample_position_update': [],
-            'sample_map_click': [],
             'image_captured': [],
-            'connection_changed': []
+            'connection_changed': [],
+            "pwm_update": []
         }
         
         # Setup logging
@@ -171,17 +170,15 @@ class UC2SerialController:
             
             if msg_type == 'status_update':
                 self._handle_status_update(data.get('data', {}))
-            elif msg_type == 'motor_command':
+            elif msg_type == 'motor_update':
                 self._handle_motor_update(data.get('data', {}))
-            elif msg_type == 'led_command':
+            elif msg_type == 'led_update':
                 self._handle_led_update(data.get('data', {}))
-            elif msg_type == 'objective_slot_command':
+            elif msg_type == 'objective_slot_update':
                 self._handle_objective_slot_update(data.get('data', {}))
-            elif msg_type == 'sample_map_click':
-                self._handle_sample_map_click(data.get('data', {}))
-            elif msg_type == 'sample_position_click':
+            elif msg_type == 'sample_position_update':
                 self._handle_sample_position_update(data.get('data', {}))
-            elif msg_type == 'snap_image_command':
+            elif msg_type == 'image_captured':
                 self._handle_image_captured(data.get('data', {}))
             else:
                 self.logger.debug(f"Unknown message type: {msg_type}")
@@ -228,11 +225,6 @@ class UC2SerialController:
         
         self._notify_callbacks('sample_position_update', data)
     
-    def _handle_sample_map_click(self, data: Dict[str, Any]):
-        """Handle sample map click event"""
-        self.logger.info(f"Sample map click: pixel_x={data.get('pixel_x')}, pixel_y={data.get('pixel_y')}, sample_number={data.get('sample_number')}")
-        self._notify_callbacks('sample_map_click', data)
-    
     def _handle_image_captured(self, data: Dict[str, Any]):
         """Handle image capture notification"""
         self.logger.info("Image captured")
@@ -273,7 +265,7 @@ class UC2SerialController:
     def on_pwm_update(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for PWM updates"""
         self.callbacks['pwm_update'].append(callback)
-        
+
     def on_led_update(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for LED updates"""
         self.callbacks['led_update'].append(callback)
@@ -285,10 +277,6 @@ class UC2SerialController:
     def on_sample_position_update(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for sample position updates"""
         self.callbacks['sample_position_update'].append(callback)
-    
-    def on_sample_map_click(self, callback: Callable[[Dict[str, Any]], None]):
-        """Register callback for sample map click events"""
-        self.callbacks['sample_map_click'].append(callback)
     
     def on_image_captured(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for image capture events"""
@@ -304,7 +292,7 @@ class UC2SerialController:
         return self._send_message({"type": "status_request"})
     
     def set_led(self, enabled: bool, r: int = 0, g: int = 0, b: int = 0):
-        """Control LED"""
+        """Control LED: {"type": "led_command","data": { "enabled": 1, "r": 0, "g": 255, "b": 255} }"""
         return self._send_message({
             "type": "led_command",
             "data": {
@@ -483,10 +471,7 @@ def _test_esp32_communication(port_device: str, timeout: float = 2.0) -> bool:
                                 # Check if it's a valid status response from our ESP32
                                 if (response.get('type') == 'status_update' and 
                                     'data' in response and
-                                    response['data'].get('connected') == True):
-                                    return True
-                                # Also accept any valid JSON response as indication of ESP32
-                                elif response.get('type') in ['led_command', 'motor_command', 'motor_xy_command']:
+                                    response['data'].get('connected')):
                                     return True
                             except json.JSONDecodeError:
                                 continue
