@@ -2,6 +2,9 @@
 #include "lvgl_helper.h"
 
 namespace uc2ui_acquisitionpage {
+    // Static callback function pointer
+    static capture_button_callback capture_callback = nullptr;
+    
     void initUI(lv_obj_t *parent) {
         // Create container for acquisition controls
         lv_obj_t *container = lv_obj_create(parent);
@@ -13,7 +16,6 @@ namespace uc2ui_acquisitionpage {
         // Title
         lv_obj_t *title = lv_label_create(container);
         lv_label_set_text(title, "Image Acquisition");
-        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_width(title, lv_pct(100));
         
@@ -22,7 +24,6 @@ namespace uc2ui_acquisitionpage {
         lv_obj_set_size(snap_btn, 200, 60);
         lv_obj_t *snap_label = lv_label_create(snap_btn);
         lv_label_set_text(snap_label, "CAPTURE IMAGE");
-        lv_obj_set_style_text_font(snap_label, &lv_font_montserrat_18, 0);
         lv_obj_center(snap_label);
         
         // Settings placeholder
@@ -34,7 +35,6 @@ namespace uc2ui_acquisitionpage {
         
         lv_obj_t *settings_title = lv_label_create(settings_container);
         lv_label_set_text(settings_title, "Acquisition Settings");
-        lv_obj_set_style_text_font(settings_title, &lv_font_montserrat_18, 0);
         
         lv_obj_t *exposure_label = lv_label_create(settings_container);
         lv_label_set_text(exposure_label, "Exposure: Auto");
@@ -48,7 +48,6 @@ namespace uc2ui_acquisitionpage {
         // Info text
         lv_obj_t *info = lv_label_create(container);
         lv_label_set_text(info, "Configure capture settings and trigger image acquisition");
-        lv_obj_set_style_text_font(info, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(info, lv_color_hex(0x666666), 0);
         lv_obj_set_width(info, lv_pct(100));

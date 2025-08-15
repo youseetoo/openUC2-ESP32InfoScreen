@@ -45,7 +45,6 @@ namespace uc2ui_laserspage {
         // Title
         lv_obj_t *title = lv_label_create(container);
         lv_label_set_text(title, "PWM Laser Control");
-        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_width(title, lv_pct(100));
         
@@ -63,7 +62,6 @@ namespace uc2ui_laserspage {
             // Channel label
             pwm_labels[i] = lv_label_create(channel_container);
             lv_label_set_text_fmt(pwm_labels[i], "PWM %d:", i + 1);
-            lv_obj_set_style_text_font(pwm_labels[i], &lv_font_montserrat_18, 0);
             lv_obj_set_width(pwm_labels[i], 80);
             
             // Slider
@@ -76,7 +74,6 @@ namespace uc2ui_laserspage {
             // Value label  
             pwm_value_labels[i] = lv_label_create(channel_container);
             lv_label_set_text(pwm_value_labels[i], "0");
-            lv_obj_set_style_text_font(pwm_value_labels[i], &lv_font_montserrat_18, 0);
             lv_obj_set_width(pwm_value_labels[i], 50);
             lv_obj_set_style_text_align(pwm_value_labels[i], LV_TEXT_ALIGN_CENTER, 0);
         }
@@ -84,7 +81,6 @@ namespace uc2ui_laserspage {
         // Info text
         lv_obj_t *info = lv_label_create(container);
         lv_label_set_text(info, "PWM values range from 0 to 1024\nUse sliders to control laser intensity");
-        lv_obj_set_style_text_font(info, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(info, lv_color_hex(0x666666), 0);
         lv_obj_set_width(info, lv_pct(100));

@@ -68,7 +68,6 @@ namespace uc2ui_samplemappage {
         // Title
         lv_obj_t *title = lv_label_create(container);
         lv_label_set_text(title, "Sample Map");
-        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_width(title, lv_pct(100));
         
@@ -95,7 +94,6 @@ namespace uc2ui_samplemappage {
         // Info text
         lv_obj_t *info = lv_label_create(container);
         lv_label_set_text(info, "Click to select sample position");
-        lv_obj_set_style_text_font(info, &lv_font_montserrat_18, 0);
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(info, lv_color_hex(0x666666), 0);
         lv_obj_set_width(info, lv_pct(100));

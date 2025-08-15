@@ -81,19 +81,25 @@ namespace lvgl_controller
 
     void initlgvl()
     {
+        Serial.println("Starting LVGL initialization...");
         log_i("initlgvl");
         /* Initialize LVGL core */
         panel = new ESP_Panel();
+        Serial.println("ESP_Panel created");
         lv_init();
+        Serial.println("LVGL core initialized");
 
         /* Using double buffers is more faster than single buffer */
         /* Using internal SRAM is more fast than PSRAM (Note: Memory allocated using `malloc` may be located in PSRAM.) */
+        Serial.println("Creating display buffer and driver...");
         log_i("create buffer and driver");
         uint8_t *buf = (uint8_t *)heap_caps_calloc(1, LVGL_BUF_SIZE * sizeof(lv_color_t), MALLOC_CAP_INTERNAL);
         //uint8_t *buf2 = (uint8_t *)heap_caps_calloc(1, LVGL_BUF_SIZE * sizeof(lv_color_t), MALLOC_CAP_INTERNAL);
         assert(buf);
         //assert(buf2);
+        Serial.println("Buffer allocated successfully");
         lv_disp_draw_buf_init(&draw_buf, buf, NULL, LVGL_BUF_SIZE);
+        Serial.println("Display buffer initialized");
 
         lv_disp_drv_init(&disp_drv);
         /* Change the following line to your display resolution */
@@ -101,7 +107,9 @@ namespace lvgl_controller
         disp_drv.ver_res = ESP_PANEL_LCD_V_RES;
         disp_drv.flush_cb = lvgl_port_disp_flush;
         disp_drv.draw_buf = &draw_buf;
+        Serial.println("Display driver configured");
         lv_disp_drv_register(&disp_drv);
+        Serial.println("Display driver registered");
 
 #if ESP_PANEL_USE_LCD_TOUCH
         /* Initialize the input device */
@@ -114,24 +122,33 @@ namespace lvgl_controller
 #endif
         log_i("create esp panel");
         /* Initialize bus and device of panel */
+        Serial.println("Initializing ESP Panel...");
         panel->init();
+        Serial.println("ESP Panel initialized");
 
         /* Start panel */
+        Serial.println("Starting ESP Panel...");
         panel->begin();
+        Serial.println("ESP Panel started");
 
         /* Create a task to run the LVGL task periodically */
+        Serial.println("Creating LVGL task...");
         lvgl_mux = xSemaphoreCreateRecursiveMutex();
         xTaskCreate(lvgl_port_task, "lvgl", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
+        Serial.println("LVGL task created");
 
         /* Lock the mutex due to the LVGL APIs are not thread-safe */
         lvgl_port_lock(-1);
 
+        Serial.println("Initializing UC2 UI...");
         log_i("init uc2 ui");
         uc2ui_controller::initUi();
         // ui_init();
+        Serial.println("UC2 UI initialized");
 
         /* Release the mutex */
         lvgl_port_unlock();
+        Serial.println("LVGL initialization completed!");
         log_i("initlgvl done");
     }
 }

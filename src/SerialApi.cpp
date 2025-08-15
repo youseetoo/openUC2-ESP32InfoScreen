@@ -3,10 +3,17 @@
 #include "uc2ui_ledpage.h"
 #include "uc2ui_motorpage.h"
 #include "uc2ui_controller.h"
+#include "uc2ui_objectivepage.h"
+#include "uc2ui_acquisitionpage.h"
+#include "uc2ui_laserspage.h"
+#include "uc2ui_samplemappage.h"
 #include <ArduinoJson.h>
 
 namespace SerialApi
 {
+    // Forward declaration
+    void sendMessage(const DynamicJsonDocument& doc);
+    
     typedef struct
     {
         int r, g, b;

@@ -18,6 +18,9 @@ namespace uc2ui_controller
 
     lv_obj_t *wifiPage;
     lv_obj_t *microscopepage;
+    
+    // Remember state before UI is initialized
+    static bool microscope_page_should_be_shown = true;
 
 
     void on_textarea_focus_event(lv_event_t *e)
@@ -42,9 +45,12 @@ namespace uc2ui_controller
 
     void initUi()
     {
+        Serial.println("Starting UC2 UI initialization...");
         lv_disp_t *display = lv_disp_get_default();
+        Serial.println("Got default display");
         lv_theme_t *theme = lv_theme_default_init(display, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
                                                   true, LV_FONT_DEFAULT);
+        Serial.println("Theme initialized");
         lv_disp_set_theme(display, theme);
         // create mainscreen
         mainScreen = lv_obj_create(NULL);
@@ -90,11 +96,23 @@ namespace uc2ui_controller
         uc2ui_acquisitionpage::initUI(acquisitionpage);
 
         lv_disp_load_scr(mainScreen);
+        
+        // Apply any deferred state changes
+        if (microscope_page_should_be_shown) {
+            showMicroscopePage(true);
+        }
     }
 
     void showMicroscopePage(bool show)
     {
-        lvgl_helper::setVisibility(microscopepage,show);
+        // Remember the desired state
+        microscope_page_should_be_shown = show;
+        
+        // Only update visibility if UI has been initialized
+        if (microscopepage != nullptr) {
+            lvgl_helper::setVisibility(microscopepage, show);
+        }
+        // If UI not initialized yet, the state will be applied when initUi() is called
     }
 
 }
