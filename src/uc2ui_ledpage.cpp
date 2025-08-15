@@ -198,5 +198,15 @@ namespace uc2ui_ledpage
         setLedOn(led_on);
         // LED count doesn't need UI update, just store the value
     }
+
+    void updateColorSliders(int r, int g, int b)
+    {
+        // Update slider values if UI has been initialized
+        if (SliderRed != nullptr && SliderGreen != nullptr && SliderBlue != nullptr) {
+            lv_slider_set_value(SliderRed, r, LV_ANIM_OFF);
+            lv_slider_set_value(SliderGreen, g, LV_ANIM_OFF);
+            lv_slider_set_value(SliderBlue, b, LV_ANIM_OFF);
+        }
+    }
 }
     

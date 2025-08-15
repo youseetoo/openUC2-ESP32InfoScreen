@@ -243,4 +243,9 @@ namespace uc2ui_objectivepage
             lv_obj_set_y(positionDot, dot_y - 4);
         }
     }
+    
+    void setSlot(int slot) {
+        // Alias for setCurrentSlot for consistency
+        setCurrentSlot(slot);
+    }
 }; // namespace uc2ui_objectivepage

@@ -79,36 +79,71 @@ namespace SerialApi
             if (type == "status_request") {
                 sendStatusUpdate();
             }
-            else if (type == "led_update" && doc.containsKey("data")) {
+            else if (type == "led_command" && doc.containsKey("data")) {
                 JsonObject data = doc["data"];
-                if (data.containsKey("enabled")) {
-                    bool enabled = data["enabled"];
-                    int r = data.containsKey("r") ? data["r"] : 0;
-                    int g = data.containsKey("g") ? data["g"] : 0; 
-                    int b = data.containsKey("b") ? data["b"] : 0;
-                    uc2ui_ledpage::setLedOn(enabled);
+                bool enabled = data.containsKey("enabled") ? data["enabled"] : false;
+                int r = data.containsKey("r") ? data["r"] : 0;
+                int g = data.containsKey("g") ? data["g"] : 0; 
+                int b = data.containsKey("b") ? data["b"] : 0;
+                
+                // Update UI sliders/indicators
+                uc2ui_ledpage::setLedOn(enabled);
+                uc2ui_ledpage::updateColorSliders(r, g, b);
+                
+                // Send acknowledgment
+                DynamicJsonDocument response(256);
+                response["type"] = "led_update";
+                response["data"]["enabled"] = enabled;
+                response["data"]["r"] = r;
+                response["data"]["g"] = g; 
+                response["data"]["b"] = b;
+                sendMessage(response);
+            }
+            else if (type == "motor_step_command" && doc.containsKey("data")) {
+                JsonObject data = doc["data"];
+                if (data.containsKey("motor") && data.containsKey("steps")) {
+                    int motor = data["motor"];
+                    int steps = data["steps"];
+                    
+                    // Handle step command - convert to appropriate speed/movement
+                    uc2ui_motorpage::handleStepCommand(motor, steps);
+                    
+                    // Send acknowledgment
+                    DynamicJsonDocument response(256);
+                    response["type"] = "motor_step_update";
+                    response["data"]["motor"] = motor;
+                    response["data"]["steps"] = steps;
+                    sendMessage(response);
                 }
             }
-            else if (type == "motor_update" && doc.containsKey("data")) {
+            else if (type == "objective_slot_command" && doc.containsKey("data")) {
                 JsonObject data = doc["data"];
-                if (data.containsKey("positions")) {
-                    JsonObject positions = data["positions"];
-                    // Update motor positions in UI if needed
+                if (data.containsKey("slot")) {
+                    int slot = data["slot"];
+                    // Update objective slot in UI
+                    uc2ui_objectivepage::setSlot(slot);
+                    
+                    // Send acknowledgment
+                    DynamicJsonDocument response(256);
+                    response["type"] = "objective_slot_update";
+                    response["data"]["current_slot"] = slot;
+                    sendMessage(response);
                 }
             }
-            else if (type == "objective_slot" && doc.containsKey("data")) {
-                JsonObject data = doc["data"];
-                if (data.containsKey("current_slot")) {
-                    int slot = data["current_slot"];
-                    // Update objective slot display
-                }
-            }
-            else if (type == "sample_position" && doc.containsKey("data")) {
+            else if (type == "sample_position_command" && doc.containsKey("data")) {
                 JsonObject data = doc["data"];
                 if (data.containsKey("x") && data.containsKey("y")) {
                     float x = data["x"];
                     float y = data["y"];
                     // Update sample map position
+                    uc2ui_samplemappage::updatePosition(x, y);
+                    
+                    // Send acknowledgment
+                    DynamicJsonDocument response(256);
+                    response["type"] = "sample_position_update";
+                    response["data"]["x"] = x;
+                    response["data"]["y"] = y;
+                    sendMessage(response);
                 }
             }
             else if (type == "pwm_command" && doc.containsKey("data")) {
@@ -116,14 +151,26 @@ namespace SerialApi
                 if (data.containsKey("channel") && data.containsKey("value")) {
                     int channel = data["channel"];
                     int value = data["value"];
-                    // Handle PWM setting - implement hardware PWM control here
-                    // For now, just acknowledge the command
+                    
+                    // Update PWM UI sliders
+                    uc2ui_laserspage::updatePwmSlider(channel, value);
+                    
+                    // Send acknowledgment
                     DynamicJsonDocument response(256);
                     response["type"] = "pwm_update";
                     response["data"]["channel"] = channel;
                     response["data"]["value"] = value;
-                    serial_controller::sendMessage(response);
+                    sendMessage(response);
                 }
+            }
+            else if (type == "snap_image_command") {
+                // Handle image capture command
+                uc2ui_acquisitionpage::triggerCapture();
+                
+                // Send acknowledgment
+                DynamicJsonDocument response(256);
+                response["type"] = "image_captured";
+                sendMessage(response);
             }
         }
     }
@@ -277,6 +324,16 @@ namespace SerialApi
         doc["type"] = "pwm_command";
         doc["data"]["channel"] = channel;
         doc["data"]["value"] = value;
+        sendMessage(doc);
+    }
+
+    void onSampleMapClick(int pixel_x, int pixel_y, int sample_number)
+    {
+        DynamicJsonDocument doc(256);
+        doc["type"] = "sample_map_click";
+        doc["data"]["pixel_x"] = pixel_x;
+        doc["data"]["pixel_y"] = pixel_y;
+        doc["data"]["sample_number"] = sample_number;
         sendMessage(doc);
     }
 

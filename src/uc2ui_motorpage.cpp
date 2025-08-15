@@ -328,4 +328,15 @@ void joyButtonEventListner(lv_event_t *e)
         setMotorY(y_motor);
         setMotorZ(z_motor);
     }
+
+    void handleStepCommand(int motor, int steps)
+    {
+        // Convert step command to appropriate motor movement
+        // For now, just trigger the motor speed listener with a brief movement
+        if (updateMotorSpeedListner) {
+            // Use a fixed speed for step commands (could be made configurable)
+            int speed = (steps > 0) ? 1000 : -1000;
+            updateMotorSpeedListner(motor, speed);
+        }
+    }
 }

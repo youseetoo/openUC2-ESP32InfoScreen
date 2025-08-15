@@ -53,4 +53,15 @@ namespace uc2ui_acquisitionpage {
         lv_obj_set_style_text_color(info, lv_color_hex(0x666666), 0);
         lv_obj_set_width(info, lv_pct(100));
     }
+    
+    void setCaptureButtonCallback(capture_button_callback callback) {
+        capture_callback = callback;
+    }
+    
+    void triggerCapture() {
+        // Programmatically trigger the capture callback
+        if (capture_callback) {
+            capture_callback();
+        }
+    }
 }

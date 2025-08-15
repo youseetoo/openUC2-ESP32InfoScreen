@@ -180,6 +180,12 @@ class UC2SerialController:
                 self._handle_sample_position_update(data.get('data', {}))
             elif msg_type == 'image_captured':
                 self._handle_image_captured(data.get('data', {}))
+            elif msg_type == 'motor_step_update':
+                self._handle_motor_step_update(data.get('data', {}))
+            elif msg_type == 'pwm_update':
+                self._handle_pwm_update(data.get('data', {}))
+            elif msg_type == 'sample_map_click':
+                self._handle_sample_map_click(data.get('data', {}))
             else:
                 self.logger.debug(f"Unknown message type: {msg_type}")
                 
@@ -229,6 +235,28 @@ class UC2SerialController:
         """Handle image capture notification"""
         self.logger.info("Image captured")
         self._notify_callbacks('image_captured', data)
+    
+    def _handle_motor_step_update(self, data: Dict[str, Any]):
+        """Handle motor step command acknowledgment"""
+        motor = data.get('motor', 0)
+        steps = data.get('steps', 0)
+        self.logger.info(f"Motor {motor} moved {steps} steps")
+        self._notify_callbacks('motor_update', data)
+        
+    def _handle_pwm_update(self, data: Dict[str, Any]):
+        """Handle PWM update"""
+        channel = data.get('channel', 0)
+        value = data.get('value', 0)
+        self.logger.info(f"PWM Channel {channel} set to {value}")
+        self._notify_callbacks('pwm_update', data)
+        
+    def _handle_sample_map_click(self, data: Dict[str, Any]):
+        """Handle sample map click"""
+        pixel_x = data.get('pixel_x', 0)
+        pixel_y = data.get('pixel_y', 0)  
+        sample_number = data.get('sample_number', 0)
+        self.logger.info(f"Sample map clicked at ({pixel_x}, {pixel_y}), sample #{sample_number}")
+        self._notify_callbacks('sample_position_update', data)
     
     def _send_message(self, message_dict: Dict[str, Any]):
         """Send message to ESP32"""
@@ -360,6 +388,16 @@ class UC2SerialController:
             "data": {
                 "channel": channel,
                 "value": value
+            }
+        })
+    
+    def move_motor_steps(self, motor_id: int, steps: int):
+        """Move motor by specific number of steps (position-based control)"""
+        return self._send_message({
+            "type": "motor_step_command", 
+            "data": {
+                "motor": motor_id,
+                "steps": steps
             }
         })
     

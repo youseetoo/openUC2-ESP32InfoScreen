@@ -93,4 +93,14 @@ namespace uc2ui_laserspage {
     void setPwmUpdateCallback(pwm_update_callback callback) {
         pwm_callback = callback;
     }
+    
+    void updatePwmSlider(int channel, int value) {
+        if (channel >= 1 && channel <= 4) {
+            int index = channel - 1; // Convert to 0-based index
+            if (pwm_sliders[index] != nullptr && pwm_value_labels[index] != nullptr) {
+                lv_slider_set_value(pwm_sliders[index], value, LV_ANIM_OFF);
+                lv_label_set_text_fmt(pwm_value_labels[index], "%d", value);
+            }
+        }
+    }
 }

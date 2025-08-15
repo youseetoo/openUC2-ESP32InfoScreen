@@ -9,4 +9,5 @@ namespace uc2ui_laserspage {
     
     // Set callback for PWM updates
     void setPwmUpdateCallback(pwm_update_callback callback);
+    void updatePwmSlider(int channel, int value);
 }

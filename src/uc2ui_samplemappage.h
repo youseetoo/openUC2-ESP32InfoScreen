@@ -6,4 +6,5 @@ namespace uc2ui_samplemappage {
     
     void initUI(lv_obj_t *parent);
     void setSampleMapClickCallback(sample_map_click_callback callback);
+    void updatePosition(float x, float y);
 }
