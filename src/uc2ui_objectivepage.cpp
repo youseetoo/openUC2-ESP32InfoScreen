@@ -46,14 +46,21 @@ namespace uc2ui_objectivepage
         lv_obj_set_height(main_container, lv_pct(100));
         lv_obj_set_align(main_container, LV_ALIGN_CENTER);
         lv_obj_clear_flag(main_container, LV_OBJ_FLAG_SCROLLABLE);
+    // Prevent gestures bubbling up and scrolling on focus
+    lv_obj_clear_flag(main_container, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(main_container, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 
         // Current slot display
-        lv_obj_t * slot_container = lv_obj_create(main_container);
+    lv_obj_t * slot_container = lv_obj_create(main_container);
         lv_obj_set_width(slot_container, lv_pct(100));
         lv_obj_set_height(slot_container, 60);
         lv_obj_set_x(slot_container, 0);
         lv_obj_set_y(slot_container, 10);
         lv_obj_set_align(slot_container, LV_ALIGN_TOP_MID);
+    // Disable scroll/gesture on header
+    lv_obj_clear_flag(slot_container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(slot_container, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(slot_container, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 
         lv_obj_t * slot_label = lv_label_create(slot_container);
         lv_label_set_text(slot_label, "Current Objective Slot:");
@@ -74,30 +81,40 @@ namespace uc2ui_objectivepage
         lv_obj_add_style(currentSlotLabel, &slot_style, 0);
 
         // Objective slot buttons
-        lv_obj_t * button_container = lv_obj_create(main_container);
+    lv_obj_t * button_container = lv_obj_create(main_container);
         lv_obj_set_width(button_container, lv_pct(100));
         lv_obj_set_height(button_container, 60);
         lv_obj_set_x(button_container, 0);
         lv_obj_set_y(button_container, 80);
         lv_obj_set_align(button_container, LV_ALIGN_TOP_MID);
+    // Disable scroll/gesture on button container
+    lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(button_container, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 
-        slot1Button = lv_btn_create(button_container);
+    slot1Button = lv_btn_create(button_container);
         lv_obj_set_width(slot1Button, 80);
         lv_obj_set_height(slot1Button, 40);
         lv_obj_set_x(slot1Button, -50);
         lv_obj_set_align(slot1Button, LV_ALIGN_CENTER);
         lv_obj_add_event_cb(slot1Button, slot1_button_event_handler, LV_EVENT_ALL, NULL);
+    // Prevent slot button from bubbling gestures / scrolling
+    lv_obj_clear_flag(slot1Button, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(slot1Button, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 
         lv_obj_t * slot1_label = lv_label_create(slot1Button);
         lv_label_set_text(slot1_label, "Slot 1");
         lv_obj_set_align(slot1_label, LV_ALIGN_CENTER);
 
-        slot2Button = lv_btn_create(button_container);
+    slot2Button = lv_btn_create(button_container);
         lv_obj_set_width(slot2Button, 80);
         lv_obj_set_height(slot2Button, 40);
         lv_obj_set_x(slot2Button, 50);
         lv_obj_set_align(slot2Button, LV_ALIGN_CENTER);
         lv_obj_add_event_cb(slot2Button, slot2_button_event_handler, LV_EVENT_ALL, NULL);
+    // Prevent slot button from bubbling gestures / scrolling
+    lv_obj_clear_flag(slot2Button, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(slot2Button, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 
         lv_obj_t * slot2_label = lv_label_create(slot2Button);
         lv_label_set_text(slot2_label, "Slot 2");

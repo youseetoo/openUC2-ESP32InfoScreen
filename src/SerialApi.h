@@ -9,6 +9,7 @@ namespace SerialApi
     void updateColors(int r, int g, int b);
     void driveMotorForever(int motor, int speed);
     void driveMotorXYForever(int speedX, int speedY);
+    void moveMotorSteps(int motor, int steps); // send absolute position updates based on step presses
     void setLedOn(bool enable, int r, int g, int b);
     void sendStatusUpdate();
     void requestObjectiveSlot();

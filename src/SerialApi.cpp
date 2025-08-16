@@ -32,6 +32,12 @@ namespace SerialApi
     const int QueueElementSize = 2;
     xTaskHandle xHandle;
 
+    // Track absolute positions for each motor axis (1=X,2=Y,3=Z,0=A optional)
+    static long motorPositionA = 0;
+    static long motorPositionX = 0;
+    static long motorPositionY = 0;
+    static long motorPositionZ = 0;
+
     // Speed mapping array (same as RestApi)
     int speeds[] = {-80000, -40000, -8000, -4000, -2000, -1000, -500, -200, -100, -50, -20, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 40000, 80000};
 
@@ -209,12 +215,10 @@ namespace SerialApi
         led.b = b;
         DynamicJsonDocument doc(512);
         doc["type"] = "led_command";
-        
         doc["data"]["r"] = r;
         doc["data"]["g"] = g;
         doc["data"]["b"] = b;
         sendMessage(doc);
-       //xQueueSend(updateLedColorQueue, (void *)&led, 0);
     }
 
     void setLedOn(bool enable, int r, int g, int b)
@@ -238,27 +242,32 @@ namespace SerialApi
         doc["data"]["motor"] = motor;
         doc["data"]["speed"] = speeds[speed];
         sendMessage(doc);
-        /*
-        if (uxQueueMessagesWaiting(driveMotorForeverQueue) == QueueElementSize - 1)
-            xQueueReceive(driveMotorForeverQueue, (void *)&m, 0);
-        
-        m.speed = speeds[speed];
-        m.motor = motor;
-        xQueueSend(driveMotorForeverQueue, (void *)&m, 0);
-        */
     }
 
     void driveMotorXYForever(int speedX, int speedY)
     {
         // Note: Debug logging disabled to prevent JSON parsing interference
         updateMotorXYForever_t o;
-        
-        if (uxQueueMessagesWaiting(driveMotorXYForeverQueue) == QueueElementSize - 1)
-            xQueueReceive(driveMotorXYForeverQueue, (void *)&o, 0);
-        
         o.speedX = speedX;
         o.speedY = speedY;
-        xQueueSend(driveMotorXYForeverQueue, (void *)&o, 0);
+        
+        DynamicJsonDocument doc(512);
+        doc["type"] = "motor_xy_command";
+        doc["data"]["speedX"] = o.speedX;
+        doc["data"]["speedY"] = o.speedY;
+        sendMessage(doc);
+
+    }
+
+    // Move motor by steps and emit relative step updates
+    void moveMotorSteps(int motor, int steps)
+    {
+        // Only send delta (relative) steps associated with the button
+        DynamicJsonDocument doc(256);
+        doc["type"] = "motor_step_update";
+        doc["data"]["motor"] = motor;
+        doc["data"]["steps"] = steps;
+        sendMessage(doc);
     }
 
     void sendSerialMsg(void *pvParameters)
