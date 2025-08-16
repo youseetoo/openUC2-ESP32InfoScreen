@@ -97,6 +97,41 @@ namespace uc2ui_controller
         
     }
 
+    // Structure to hold image resources for cleanup
+    typedef struct {
+        lv_img_dsc_t* imgDsc;
+        uint8_t* imageBuffer;
+    } image_resources_t;
+    
+    // Event handler for close button
+    static void close_btn_event_handler(lv_event_t * e)
+    {
+        lv_event_code_t code = lv_event_get_code(e);
+        if (code == LV_EVENT_CLICKED) {
+            lv_obj_t * btn = lv_event_get_target(e);
+            
+            // Get the image resources from user data
+            image_resources_t* resources = (image_resources_t*)lv_obj_get_user_data(btn);
+            if (resources) {
+                // Free allocated memory
+                if (resources->imageBuffer) {
+                    heap_caps_free(resources->imageBuffer);
+                    log_i("Freed image buffer");
+                }
+                if (resources->imgDsc) {
+                    heap_caps_free(resources->imgDsc);
+                    log_i("Freed image descriptor");
+                }
+                heap_caps_free(resources);
+            }
+            
+            // Remove the tab (this will also delete all child objects)
+            lv_obj_t* tab = lv_obj_get_parent(btn);
+            lv_obj_del(tab);
+            log_i("Closed image tab and cleaned up resources");
+        }
+    }
+
     static bool microscope_page_should_be_shown = false;
 
     void showMicroscopePage(bool show)
@@ -138,6 +173,10 @@ namespace uc2ui_controller
         }
         
         try {
+            // Log image parameters for debugging
+            log_i("Displaying image: %s (%dx%d), data length: %d", 
+                  tabName.c_str(), width, height, imageData.length());
+            
             // Create new tab for the image
             lv_obj_t *imageTab = lv_tabview_add_tab(ui_MainTabView, tabName.c_str());
             if (imageTab == nullptr) {
@@ -148,19 +187,32 @@ namespace uc2ui_controller
             // Set tab to be scrollable for large images
             lv_obj_clear_flag(imageTab, LV_OBJ_FLAG_SCROLLABLE);
             
-            // Decode base64 image data
-            int decodedLen = (imageData.length() * 3) / 4; // Approximate decoded length
+            // Calculate expected decoded length more precisely
+            int expectedLen = width * height * 2; // RGB565 = 2 bytes per pixel
+            int decodedLen = (imageData.length() * 3) / 4 + 4; // Add some padding
+            
+            log_i("Expected decoded length: %d, buffer size: %d", expectedLen, decodedLen);
+            
             uint8_t* imageBuffer = (uint8_t*)heap_caps_malloc(decodedLen, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
             if (imageBuffer == nullptr) {
-                log_e("Failed to allocate image buffer (%d bytes)", decodedLen);
-                return false;
+                // Try regular heap if SPIRAM allocation fails
+                imageBuffer = (uint8_t*)heap_caps_malloc(decodedLen, MALLOC_CAP_8BIT);
+                if (imageBuffer == nullptr) {
+                    log_e("Failed to allocate image buffer (%d bytes)", decodedLen);
+                    return false;
+                }
+                log_i("Using regular heap for image buffer");
+            } else {
+                log_i("Using SPIRAM for image buffer");
             }
             
-            // Simple base64 decode (we'll implement this)
+            // Decode base64 image data
             int actualLen = decodeBase64(imageData, imageBuffer, decodedLen);
-            if (actualLen <= 0) {
+            log_i("Decoded %d bytes from base64 data", actualLen);
+            
+            if (actualLen <= 0 || actualLen < expectedLen) {
                 heap_caps_free(imageBuffer);
-                log_e("Failed to decode base64 image data");
+                log_e("Failed to decode base64 image data (got %d, expected %d)", actualLen, expectedLen);
                 return false;
             }
             
@@ -193,7 +245,7 @@ namespace uc2ui_controller
             lv_img_set_src(imgObj, imgDsc);
             lv_obj_center(imgObj);
             
-            // Add close button for the tab
+            // Add close button for the tab with proper cleanup
             lv_obj_t* closeBtn = lv_btn_create(imageTab);
             lv_obj_set_size(closeBtn, 60, 30);
             lv_obj_align(closeBtn, LV_ALIGN_TOP_RIGHT, -10, 10);
@@ -202,9 +254,17 @@ namespace uc2ui_controller
             lv_label_set_text(closeLbl, "X");
             lv_obj_center(closeLbl);
             
-            // TODO: Add close button event handler to cleanup memory
+            // Store image resources for cleanup when tab is closed
+            image_resources_t* resources = (image_resources_t*)heap_caps_malloc(sizeof(image_resources_t), MALLOC_CAP_8BIT);
+            if (resources) {
+                resources->imgDsc = imgDsc;
+                resources->imageBuffer = imageBuffer;
+                lv_obj_set_user_data(closeBtn, resources);
+                lv_obj_add_event_cb(closeBtn, close_btn_event_handler, LV_EVENT_CLICKED, NULL);
+            }
             
-            log_i("Successfully displayed image: %s (%dx%d)", tabName.c_str(), width, height);
+            log_i("Successfully displayed image: %s (%dx%d), decoded %d bytes", 
+                  tabName.c_str(), width, height, actualLen);
             return true;
             
         } catch (...) {
@@ -213,33 +273,72 @@ namespace uc2ui_controller
         }
     }
     
-    // Simple base64 decoder implementation
+    // Improved base64 decoder implementation
     int decodeBase64(const String& input, uint8_t* output, int maxLen) 
     {
         const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         int len = input.length();
         int outLen = 0;
         
+        // Remove any padding characters for length calculation
+        while (len > 0 && input[len - 1] == '=') {
+            len--;
+        }
+        
         for (int i = 0; i < len && outLen < maxLen - 3; i += 4) {
             uint8_t a = 0, b = 0, c = 0, d = 0;
             
-            // Find character positions
-            for (int j = 0; j < 64; j++) {
-                if (input[i] == chars[j]) a = j;
-                if (i + 1 < len && input[i + 1] == chars[j]) b = j;
-                if (i + 2 < len && input[i + 2] == chars[j]) c = j;
-                if (i + 3 < len && input[i + 3] == chars[j]) d = j;
+            // Find character positions in base64 alphabet
+            if (i < len) {
+                for (int j = 0; j < 64; j++) {
+                    if (input[i] == chars[j]) {
+                        a = j;
+                        break;
+                    }
+                }
             }
             
-            // Decode 4 characters to 3 bytes
+            if (i + 1 < input.length()) {
+                for (int j = 0; j < 64; j++) {
+                    if (input[i + 1] == chars[j]) {
+                        b = j;
+                        break;
+                    }
+                }
+            }
+            
+            if (i + 2 < input.length() && input[i + 2] != '=') {
+                for (int j = 0; j < 64; j++) {
+                    if (input[i + 2] == chars[j]) {
+                        c = j;
+                        break;
+                    }
+                }
+            }
+            
+            if (i + 3 < input.length() && input[i + 3] != '=') {
+                for (int j = 0; j < 64; j++) {
+                    if (input[i + 3] == chars[j]) {
+                        d = j;
+                        break;
+                    }
+                }
+            }
+            
+            // Decode 4 characters to up to 3 bytes
             uint32_t combined = (a << 18) | (b << 12) | (c << 6) | d;
             
+            // Always output first byte
             output[outLen++] = (combined >> 16) & 0xFF;
-            if (i + 2 < len && input[i + 2] != '=') {
-                output[outLen++] = (combined >> 8) & 0xFF;
+            
+            // Output second byte if not padding
+            if (i + 2 < input.length() && input[i + 2] != '=') {
+                if (outLen < maxLen) output[outLen++] = (combined >> 8) & 0xFF;
             }
-            if (i + 3 < len && input[i + 3] != '=') {
-                output[outLen++] = combined & 0xFF;
+            
+            // Output third byte if not padding
+            if (i + 3 < input.length() && input[i + 3] != '=') {
+                if (outLen < maxLen) output[outLen++] = combined & 0xFF;
             }
         }
         
