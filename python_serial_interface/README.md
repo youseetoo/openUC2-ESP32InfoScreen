@@ -1,6 +1,6 @@
 # OpenUC2 ESP32 Serial Interface
 
-A Python package for communicating with the OpenUC2 ESP32 controller via USB Serial. This package provides bidirectional communication for microscope control including motors, LEDs, objective slots, sample positioning, and laser/PWM control.
+A Python package for communicating with the OpenUC2 ESP32 controller via USB Serial. This package provides bidirectional communication for microscope control including motors, LEDs, objective slots, sample positioning, laser/PWM control, and **image display**.
 
 ## Features
 
@@ -12,6 +12,8 @@ A Python package for communicating with the OpenUC2 ESP32 controller via USB Ser
 - **Sample Position Tracking**: Display and update sample position on a map
 - **PWM/Laser Control**: Control 4 PWM channels with 0-1024 range for laser intensity
 - **Image Capture**: Trigger image capture with snap button
+- **🆕 Image Display**: Send numpy arrays/images to display as new tabs on ESP32 screen
+- **🆕 Automatic Image Capture**: Auto-send images when snap button is pressed
 - **Callback System**: Register callbacks for various events (motor updates, LED changes, PWM updates, etc.)
 - **Auto Port Detection**: Automatically find and validate ESP32 serial port
 - **Clean JSON Protocol**: Proper separation of debug logs and command messages
@@ -25,11 +27,12 @@ The ESP32 interface now features individual tabs instead of nested structure:
 - **Sample Map**: Visual position display with red indicator
 - **Lasers**: PWM channels 1-4 with 0-1024 sliders
 - **Acquisition**: Image capture settings and controls
+- **🆕 Image Tabs**: Dynamically created tabs showing images sent from Python
 
 ## Installation
 
 ```bash
-# Install from requirements
+# Install from requirements (includes numpy and Pillow for image processing)
 pip install -r requirements.txt
 
 # Or install the package in development mode
@@ -191,6 +194,121 @@ The serial communication uses JSON messages for bidirectional communication:
 // User clicked on sample map
 {"type": "sample_map_click", "data": {"pixel_x": 414, "pixel_y": 68, "sample_number": 12}}
 ```
+
+## 🆕 Image Display Feature
+
+Send images from Python to display as new tabs on the ESP32 screen!
+
+### Quick Start - Image Display
+
+```python
+import numpy as np
+from uc2_serial_controller import UC2SerialController
+
+controller = UC2SerialController()
+controller.connect()
+
+# Send a simple test image
+test_image = np.zeros((80, 120, 3), dtype=np.uint8)
+test_image[:, :, 0] = 255  # Red image
+controller.send_image(test_image, "Red Test")
+
+# Set up automatic image capture on snap button press
+def capture_camera_frame():
+    # Your camera capture code here
+    return camera.get_frame()  # Should return numpy array
+
+controller.send_image_on_snap(capture_camera_frame)
+```
+
+### Image Display Methods
+
+#### `send_image(image, tab_name, max_width=240, max_height=160)`
+Send an image to display on ESP32 as a new tab.
+
+**Parameters:**
+- `image`: Numpy array (H, W, 3) RGB image, or path to image file
+- `tab_name`: Name for the image tab (max 15 characters) 
+- `max_width`: Maximum width to resize image (default: 240)
+- `max_height`: Maximum height to resize image (default: 160)
+
+**Returns:** `bool` - True if sent successfully
+
+**Examples:**
+```python
+# Send numpy array
+image = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+controller.send_image(image, "Random Pattern")
+
+# Send image file
+controller.send_image("captured_image.jpg", "Camera Shot")
+
+# Send grayscale image (auto-converted to RGB)
+gray_img = np.ones((50, 50), dtype=np.uint8) * 128
+controller.send_image(gray_img, "Gray Square")
+```
+
+#### `send_image_on_snap(image_source_callback)`
+Automatically send images when the snap button is pressed on ESP32 display.
+
+**Parameters:**
+- `image_source_callback`: Function that returns image data when called
+
+**Example:**
+```python
+def get_microscope_image():
+    """Capture current microscope view"""
+    # Connect to your camera/microscope
+    frame = microscope.capture()
+    return frame  # numpy array
+
+# Now when user presses snap button on ESP32, 
+# a new image tab will automatically appear!
+controller.send_image_on_snap(get_microscope_image)
+```
+
+### Supported Image Formats
+
+- **Numpy arrays**: RGB (H,W,3), RGBA (H,W,4), Grayscale (H,W)
+- **Data types**: uint8, float32/float64 (0.0-1.0 range)
+- **File formats**: JPG, PNG, BMP, TIFF (via PIL/Pillow)
+- **Automatic conversion**: Grayscale→RGB, RGBA→RGB, Float→uint8
+- **Automatic resizing**: Large images resized to fit ESP32 memory
+
+### Image Display Protocol
+
+```json
+// Send image command (Python → ESP32)
+{
+  "type": "display_image_command",
+  "data": {
+    "tab_name": "Camera View",
+    "width": 120,
+    "height": 80, 
+    "format": "rgb565",
+    "image_data": "base64_encoded_rgb565_data..."
+  }
+}
+
+// Image display result (ESP32 → Python)
+{
+  "type": "image_display_result",
+  "data": {
+    "tab_name": "Camera View",
+    "width": 120,
+    "height": 80,
+    "success": true
+  }
+}
+```
+
+### Technical Details
+
+- **Format**: Images converted to RGB565 format for ESP32 efficiency
+- **Encoding**: Base64 encoding for JSON transmission
+- **Memory**: ESP32 memory constraints limit image size (~240x160 max)
+- **Tabs**: New tab created for each image with close button
+- **Performance**: Optimized for small-to-medium microscopy images
 
 ## Hardware Requirements
 
