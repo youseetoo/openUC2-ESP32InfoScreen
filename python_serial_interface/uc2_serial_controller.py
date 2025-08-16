@@ -75,7 +75,14 @@ class UC2SerialController:
             'sample_position_update': [],
             'image_captured': [],
             'connection_changed': [],
-            "pwm_update": []
+            'pwm_update': [],
+            # New command event callbacks (ESP32 -> Python when user interacts with display)
+            'objective_slot_command': [],
+            'motor_command': [],
+            'motor_xy_command': [],
+            'led_command': [],
+            'pwm_command': [],
+            'snap_image_command': []
         }
         
         # Setup logging
@@ -168,6 +175,7 @@ class UC2SerialController:
             data = json.loads(message)
             msg_type = data.get('type', '')
             
+            # Handle update messages (ESP32 status/state changes)
             if msg_type == 'status_update':
                 self._handle_status_update(data.get('data', {}))
             elif msg_type == 'motor_update':
@@ -186,6 +194,20 @@ class UC2SerialController:
                 self._handle_pwm_update(data.get('data', {}))
             elif msg_type == 'sample_map_click':
                 self._handle_sample_map_click(data.get('data', {}))
+            
+            # Handle command messages (user interactions with ESP32 display)
+            elif msg_type == 'objective_slot_command':
+                self._handle_objective_slot_command(data.get('data', {}))
+            elif msg_type == 'motor_command':
+                self._handle_motor_command(data.get('data', {}))
+            elif msg_type == 'motor_xy_command':
+                self._handle_motor_xy_command(data.get('data', {}))
+            elif msg_type == 'led_command':
+                self._handle_led_command(data.get('data', {}))
+            elif msg_type == 'pwm_command':
+                self._handle_pwm_command(data.get('data', {}))
+            elif msg_type == 'snap_image_command':
+                self._handle_snap_image_command(data.get('data', {}))
             else:
                 self.logger.debug(f"Unknown message type: {msg_type}")
                 
@@ -258,6 +280,48 @@ class UC2SerialController:
         self.logger.info(f"Sample map clicked at ({pixel_x}, {pixel_y}), sample #{sample_number}")
         self._notify_callbacks('sample_position_update', data)
     
+    # Command message handlers (user interactions with ESP32 display)
+    def _handle_objective_slot_command(self, data: Dict[str, Any]):
+        """Handle objective slot command from display"""
+        slot = data.get('slot', 1)
+        self.logger.info(f"User selected objective slot {slot} on display")
+        self._notify_callbacks('objective_slot_command', data)
+    
+    def _handle_motor_command(self, data: Dict[str, Any]):
+        """Handle motor command from display"""
+        motor = data.get('motor', 0)
+        speed = data.get('speed', 0)
+        self.logger.info(f"User set motor {motor} to speed {speed} on display")
+        self._notify_callbacks('motor_command', data)
+    
+    def _handle_motor_xy_command(self, data: Dict[str, Any]):
+        """Handle XY motor command from display"""
+        speed_x = data.get('speedX', 0)
+        speed_y = data.get('speedY', 0)
+        self.logger.info(f"User set XY motors to speeds X={speed_x}, Y={speed_y} on display")
+        self._notify_callbacks('motor_xy_command', data)
+    
+    def _handle_led_command(self, data: Dict[str, Any]):
+        """Handle LED command from display"""
+        enabled = data.get('enabled', False)
+        r = data.get('r', 0)
+        g = data.get('g', 0)
+        b = data.get('b', 0)
+        self.logger.info(f"User set LED on display: enabled={enabled}, RGB=({r}, {g}, {b})")
+        self._notify_callbacks('led_command', data)
+    
+    def _handle_pwm_command(self, data: Dict[str, Any]):
+        """Handle PWM command from display"""
+        channel = data.get('channel', 0)
+        value = data.get('value', 0)
+        self.logger.info(f"User set PWM channel {channel} to {value} on display")
+        self._notify_callbacks('pwm_command', data)
+    
+    def _handle_snap_image_command(self, data: Dict[str, Any]):
+        """Handle snap image command from display"""
+        self.logger.info("User pressed snap image button on display")
+        self._notify_callbacks('snap_image_command', data)
+    
     def _send_message(self, message_dict: Dict[str, Any]):
         """Send message to ESP32"""
         if not self.is_connected or not self.serial_conn:
@@ -313,6 +377,31 @@ class UC2SerialController:
     def on_connection_changed(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for connection changes"""
         self.callbacks['connection_changed'].append(callback)
+    
+    # Command event callback registration (user interactions with ESP32 display)
+    def on_objective_slot_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for objective slot commands from display"""
+        self.callbacks['objective_slot_command'].append(callback)
+    
+    def on_motor_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for motor commands from display"""
+        self.callbacks['motor_command'].append(callback)
+    
+    def on_motor_xy_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for XY motor commands from display"""
+        self.callbacks['motor_xy_command'].append(callback)
+    
+    def on_led_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for LED commands from display"""
+        self.callbacks['led_command'].append(callback)
+    
+    def on_pwm_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for PWM commands from display"""
+        self.callbacks['pwm_command'].append(callback)
+    
+    def on_snap_image_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for snap image commands from display"""
+        self.callbacks['snap_image_command'].append(callback)
     
     # Command methods
     def request_status(self):

@@ -104,6 +104,14 @@ if controller.connect():
 - `on_image_captured(callback)` - Image capture events
 - `on_connection_changed(callback)` - Connection status changes
 
+**New: ESP32 Display Interaction Callbacks** (User interactions with ESP32 display)
+- `on_objective_slot_command(callback)` - User pressed objective slot buttons
+- `on_motor_command(callback)` - User moved motor speed sliders 
+- `on_motor_xy_command(callback)` - User moved XY joystick
+- `on_led_command(callback)` - User changed LED settings
+- `on_pwm_command(callback)` - User moved PWM sliders
+- `on_snap_image_command(callback)` - User pressed snap image button
+
 #### State Properties
 - `motor_positions` - Current motor positions
 - `led_status` - Current LED state
@@ -155,6 +163,33 @@ The serial communication uses JSON messages for bidirectional communication:
 
 // Image captured
 {"type": "image_captured", "data": {}}
+```
+
+### Command Events (ESP32 → Python when user interacts with display)
+```json
+// User pressed objective slot button
+{"type": "objective_slot_command", "data": {"slot": 2}}
+
+// User moved motor speed slider
+{"type": "motor_command", "data": {"motor": 1, "speed": 100}}
+
+// User moved XY joystick
+{"type": "motor_xy_command", "data": {"speedX": 500, "speedY": 300}}
+
+// User changed LED settings
+{"type": "led_command", "data": {"enabled": true, "r": 255, "g": 0, "b": 0}}
+
+// User moved PWM slider  
+{"type": "pwm_command", "data": {"channel": 1, "value": 512}}
+
+// User pressed snap image button
+{"type": "snap_image_command"}
+
+// User pressed motor step buttons
+{"type": "motor_step_update", "data": {"motor": 1, "steps": 100}}
+
+// User clicked on sample map
+{"type": "sample_map_click", "data": {"pixel_x": 414, "pixel_y": 68, "sample_number": 12}}
 ```
 
 ## Hardware Requirements

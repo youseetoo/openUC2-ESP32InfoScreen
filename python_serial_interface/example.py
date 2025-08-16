@@ -62,6 +62,36 @@ def main():
         status = "✅ Connected" if connected else "❌ Disconnected"
         print(f"🔌 Connection: {status}")
     
+    # New command event callbacks (ESP32 display interactions)
+    def on_objective_slot_command(data):
+        slot = data.get('slot', 1)
+        print(f"🎯 User selected objective slot {slot} on display")
+        
+    def on_motor_command(data):
+        motor = data.get('motor', 0)
+        speed = data.get('speed', 0)
+        print(f"🔧 User set motor {motor} to speed {speed} on display")
+        
+    def on_motor_xy_command(data):
+        speed_x = data.get('speedX', 0)
+        speed_y = data.get('speedY', 0)
+        print(f"🕹️  User moved XY joystick: X={speed_x}, Y={speed_y}")
+        
+    def on_led_command(data):
+        enabled = data.get('enabled', False)
+        r = data.get('r', 0)
+        g = data.get('g', 0) 
+        b = data.get('b', 0)
+        print(f"🌈 User changed LED on display: enabled={enabled}, RGB=({r}, {g}, {b})")
+        
+    def on_pwm_command(data):
+        channel = data.get('channel', 0)
+        value = data.get('value', 0)
+        print(f"⚡ User set PWM channel {channel} to {value} on display")
+        
+    def on_snap_image_command(data):
+        print(f"📸 User pressed snap button on display!")
+    
     # Register all callbacks
     controller.on_status_update(on_status_update)
     controller.on_led_update(on_led_update)
@@ -71,6 +101,14 @@ def main():
     controller.on_sample_position_update(on_sample_position_update)
     controller.on_image_captured(on_image_captured)
     controller.on_connection_changed(on_connection_changed)
+    
+    # Register new command event callbacks (ESP32 display interactions)
+    controller.on_objective_slot_command(on_objective_slot_command)
+    controller.on_motor_command(on_motor_command)
+    controller.on_motor_xy_command(on_motor_xy_command)
+    controller.on_led_command(on_led_command)
+    controller.on_pwm_command(on_pwm_command)
+    controller.on_snap_image_command(on_snap_image_command)
     
     # Connect to ESP32
     print("🔄 Connecting to ESP32...")
@@ -158,7 +196,8 @@ def main():
         print(f"  Sample Position: {controller.current_sample_position}")
         
         # Keep running to monitor updates
-        print("\n👂 Monitoring for updates (Press Ctrl+C to exit)...")
+        print(f"\n👂 Monitoring for ESP32 display interactions and updates (Press Ctrl+C to exit)...")
+        print("   Try pressing buttons or moving sliders on the ESP32 display to see command events!")
         while True:
             time.sleep(1)
     
