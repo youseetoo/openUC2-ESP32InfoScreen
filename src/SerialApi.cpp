@@ -196,6 +196,8 @@ namespace SerialApi
         String message;
         serializeJson(doc, message);
         serial_controller::sendMessage(message);
+        // add slight delay
+        vTaskDelay(10);
     }
 
     void updateColors(int r, int g, int b)
@@ -205,7 +207,14 @@ namespace SerialApi
         led.r = r;
         led.g = g;
         led.b = b;
-        xQueueSend(updateLedColorQueue, (void *)&led, 0);
+        DynamicJsonDocument doc(512);
+        doc["type"] = "led_command";
+        
+        doc["data"]["r"] = r;
+        doc["data"]["g"] = g;
+        doc["data"]["b"] = b;
+        sendMessage(doc);
+       //xQueueSend(updateLedColorQueue, (void *)&led, 0);
     }
 
     void setLedOn(bool enable, int r, int g, int b)
@@ -223,13 +232,20 @@ namespace SerialApi
     {
         // Note: Debug logging disabled to prevent JSON parsing interference  
         updateMotorForever_t m;
-        
+        // use sendMessage instead
+        DynamicJsonDocument doc(512);
+        doc["type"] = "motor_command";
+        doc["data"]["motor"] = motor;
+        doc["data"]["speed"] = speeds[speed];
+        sendMessage(doc);
+        /*
         if (uxQueueMessagesWaiting(driveMotorForeverQueue) == QueueElementSize - 1)
             xQueueReceive(driveMotorForeverQueue, (void *)&m, 0);
         
         m.speed = speeds[speed];
         m.motor = motor;
         xQueueSend(driveMotorForeverQueue, (void *)&m, 0);
+        */
     }
 
     void driveMotorXYForever(int speedX, int speedY)

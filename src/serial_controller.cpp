@@ -16,9 +16,8 @@ namespace serial_controller
         inputBuffer.reserve(1024); // Reserve space for incoming messages
         
         // Create mutex for serial communication synchronization
-        serialMutex = xSemaphoreCreateMutex();
-        if (serialMutex == NULL) {
-            log_e("Failed to create serial mutex");
+        if (!serialMutex) {
+            serialMutex = xSemaphoreCreateMutex();
         }
     }
 
@@ -48,8 +47,22 @@ namespace serial_controller
         return current_status;
     }
 
+
+    static void writeLine(const String& line) {
+    if (serialMutex) xSemaphoreTake(serialMutex, portMAX_DELAY);
+    // Write entire line atomically
+    Serial.write((const uint8_t*)line.c_str(), line.length());
+    Serial.write('\n');
+    Serial.flush();          // Ensure it is pushed to USB CDC
+    // Give USB task time to drain (important on S3/TinyUSB)
+    vTaskDelay(10);           // yield 1 tick
+    if (serialMutex) xSemaphoreGive(serialMutex);
+}
+
     void sendMessage(const String& message)
     {
+        writeLine(message);
+        /*
         // Use mutex to prevent serial message corruption from multiple tasks
         if (serialMutex != nullptr && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
             Serial.println(message);
@@ -60,5 +73,6 @@ namespace serial_controller
             Serial.println(message);
             Serial.flush();
         }
+            */
     }
 }; // namespace serial_controller

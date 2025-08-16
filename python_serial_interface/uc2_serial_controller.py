@@ -503,6 +503,7 @@ def _test_esp32_communication(port_device: str, timeout: float = 2.0) -> bool:
                     lines = response_buffer.split('\n')
                     for line in lines:
                         line = line.strip()
+                        print(line)
                         if line.startswith('{') and line.endswith('}'):
                             try:
                                 response = json.loads(line)

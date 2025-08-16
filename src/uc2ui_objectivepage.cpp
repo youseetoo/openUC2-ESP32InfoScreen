@@ -6,8 +6,6 @@ namespace uc2ui_objectivepage
     lv_obj_t * currentSlotLabel;
     lv_obj_t * slot1Button;
     lv_obj_t * slot2Button;
-    lv_obj_t * snapButton;
-    lv_obj_t * sampleMapCanvas;
     lv_obj_t * positionDot;
 
     // State
@@ -17,7 +15,6 @@ namespace uc2ui_objectivepage
 
     // Callbacks
     void (*slotChangeCallback)(int slot) = nullptr;
-    void (*snapButtonCallback)() = nullptr;
 
     // Event handlers
     static void slot1_button_event_handler(lv_event_t * e)
@@ -40,15 +37,6 @@ namespace uc2ui_objectivepage
         }
     }
 
-    static void snap_button_event_handler(lv_event_t * e)
-    {
-        lv_event_code_t code = lv_event_get_code(e);
-        if (code == LV_EVENT_CLICKED) {
-            if (snapButtonCallback != nullptr) {
-                snapButtonCallback();
-            }
-        }
-    }
 
     void initUI(lv_obj_t * container)
     {
@@ -115,71 +103,6 @@ namespace uc2ui_objectivepage
         lv_label_set_text(slot2_label, "Slot 2");
         lv_obj_set_align(slot2_label, LV_ALIGN_CENTER);
 
-        // Snap button
-        lv_obj_t * snap_container = lv_obj_create(main_container);
-        lv_obj_set_width(snap_container, lv_pct(100));
-        lv_obj_set_height(snap_container, 60);
-        lv_obj_set_x(snap_container, 0);
-        lv_obj_set_y(snap_container, 150);
-        lv_obj_set_align(snap_container, LV_ALIGN_TOP_MID);
-
-        snapButton = lv_btn_create(snap_container);
-        lv_obj_set_width(snapButton, 120);
-        lv_obj_set_height(snapButton, 50);
-        lv_obj_set_align(snapButton, LV_ALIGN_CENTER);
-        lv_obj_add_event_cb(snapButton, snap_button_event_handler, LV_EVENT_ALL, NULL);
-
-        // Style snap button
-        static lv_style_t snap_style;
-        lv_style_init(&snap_style);
-        lv_style_set_bg_color(&snap_style, lv_color_hex(0x00aa00));
-        lv_obj_add_style(snapButton, &snap_style, 0);
-
-        lv_obj_t * snap_label = lv_label_create(snapButton);
-        lv_label_set_text(snap_label, "SNAP");
-        lv_obj_set_align(snap_label, LV_ALIGN_CENTER);
-
-        // Sample map display
-        lv_obj_t * map_container = lv_obj_create(main_container);
-        lv_obj_set_width(map_container, lv_pct(100));
-        lv_obj_set_height(map_container, 120);
-        lv_obj_set_x(map_container, 0);
-        lv_obj_set_y(map_container, 220);
-        lv_obj_set_align(map_container, LV_ALIGN_TOP_MID);
-
-        lv_obj_t * map_label = lv_label_create(map_container);
-        lv_label_set_text(map_label, "Sample Map:");
-        lv_obj_set_align(map_label, LV_ALIGN_TOP_LEFT);
-
-        // Create a simple sample map representation
-        sampleMapCanvas = lv_obj_create(map_container);
-        lv_obj_set_width(sampleMapCanvas, 200);
-        lv_obj_set_height(sampleMapCanvas, 80);
-        lv_obj_set_x(sampleMapCanvas, 0);
-        lv_obj_set_y(sampleMapCanvas, 25);
-        lv_obj_set_align(sampleMapCanvas, LV_ALIGN_TOP_MID);
-        
-        // Style map canvas
-        static lv_style_t map_style;
-        lv_style_init(&map_style);
-        lv_style_set_bg_color(&map_style, lv_color_hex(0x333333));
-        lv_style_set_border_color(&map_style, lv_color_hex(0x666666));
-        lv_style_set_border_width(&map_style, 2);
-        lv_obj_add_style(sampleMapCanvas, &map_style, 0);
-
-        // Position indicator dot
-        positionDot = lv_obj_create(sampleMapCanvas);
-        lv_obj_set_width(positionDot, 8);
-        lv_obj_set_height(positionDot, 8);
-        lv_obj_set_align(positionDot, LV_ALIGN_CENTER);
-        
-        // Style position dot
-        static lv_style_t dot_style;
-        lv_style_init(&dot_style);
-        lv_style_set_bg_color(&dot_style, lv_color_hex(0xff0000)); // Red dot
-        lv_style_set_radius(&dot_style, LV_RADIUS_CIRCLE);
-        lv_style_set_border_width(&dot_style, 0);
-        lv_obj_add_style(positionDot, &dot_style, 0);
 
         // Set initial slot
         setCurrentSlot(1);
@@ -217,32 +140,6 @@ namespace uc2ui_objectivepage
         slotChangeCallback = slotChangeListener;
     }
 
-    void setOnSnapButtonListener(void snapButtonListener())
-    {
-        snapButtonCallback = snapButtonListener;
-    }
-
-    void updateSampleMap(float x, float y)
-    {
-        current_x = x;
-        current_y = y;
-        
-        if (positionDot != nullptr && sampleMapCanvas != nullptr) {
-            // Map position to canvas coordinates (assuming normalized coordinates 0-1)
-            int canvas_width = lv_obj_get_width(sampleMapCanvas);
-            int canvas_height = lv_obj_get_height(sampleMapCanvas);
-            
-            int dot_x = (int)(x * canvas_width);
-            int dot_y = (int)(y * canvas_height);
-            
-            // Clamp to canvas boundaries
-            dot_x = dot_x < 4 ? 4 : (dot_x > canvas_width - 4 ? canvas_width - 4 : dot_x);
-            dot_y = dot_y < 4 ? 4 : (dot_y > canvas_height - 4 ? canvas_height - 4 : dot_y);
-            
-            lv_obj_set_x(positionDot, dot_x - 4); // Center the dot
-            lv_obj_set_y(positionDot, dot_y - 4);
-        }
-    }
     
     void setSlot(int slot) {
         // Alias for setCurrentSlot for consistency

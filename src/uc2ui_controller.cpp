@@ -90,11 +90,23 @@ namespace uc2ui_controller
         uc2ui_acquisitionpage::initUI(acquisitionpage);
 
         lv_disp_load_scr(mainScreen);
+        
+        // Apply any deferred state that was set before UI was ready
+        showMicroscopePage(true);
+        
     }
+
+    static bool microscope_page_should_be_shown = false;
 
     void showMicroscopePage(bool show)
     {
-        lvgl_helper::setVisibility(microscopepage,show);
+        if (microscopepage == nullptr) {
+            // UI not initialized yet, remember the state for later
+            microscope_page_should_be_shown = show;
+            return;
+        }
+        lvgl_helper::setVisibility(microscopepage, show);
+        microscope_page_should_be_shown = false;
     }
 
 }

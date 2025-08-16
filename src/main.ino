@@ -14,9 +14,12 @@
 void setup()
 {
   Serial.begin(115200); /* prepare for possible serial debug */
-  Serial.setTimeout(50);
+  Serial.setTimeout(100); 
+  Serial.setTxBufferSize(1024);
   Serial.println("");
   Serial.println("ESP32 Info Screen - Serial Mode");
+  esp_log_level_set("*", ESP_LOG_NONE);
+  Serial.setDebugOutput(false);
 
   esp_err_t err = nvs_flash_init();
   if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)

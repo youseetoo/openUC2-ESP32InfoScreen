@@ -65,8 +65,12 @@ namespace uc2ui_ledpage
             int r = lv_slider_get_value(SliderRed);
             int g = lv_slider_get_value(SliderGreen);
             int b = lv_slider_get_value(SliderBlue);
-            if (updatedColorsListner != nullptr)
+            if (updatedColorsListner != nullptr){
+                // add delay
+                // vTaskDelay(10);
                 updatedColorsListner(r, g, b);
+                // vTaskDelay(10);
+            }
         }
     }
 
