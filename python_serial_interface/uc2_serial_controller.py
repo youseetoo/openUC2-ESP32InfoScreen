@@ -12,7 +12,10 @@ import json
 import threading
 import time
 import logging
-from typing import Callable, Optional, Dict, Any
+import base64
+import os
+import numpy as np
+from typing import Callable, Optional, Dict, Any, Union
 from dataclasses import dataclass
 
 @dataclass
@@ -75,7 +78,14 @@ class UC2SerialController:
             'sample_position_update': [],
             'image_captured': [],
             'connection_changed': [],
-            "pwm_update": []
+            'pwm_update': [],
+            # New command event callbacks (ESP32 -> Python when user interacts with display)
+            'objective_slot_command': [],
+            'motor_command': [],
+            'motor_xy_command': [],
+            'led_command': [],
+            'pwm_command': [],
+            'snap_image_command': []
         }
         
         # Setup logging
@@ -168,6 +178,7 @@ class UC2SerialController:
             data = json.loads(message)
             msg_type = data.get('type', '')
             
+            # Handle update messages (ESP32 status/state changes)
             if msg_type == 'status_update':
                 self._handle_status_update(data.get('data', {}))
             elif msg_type == 'motor_update':
@@ -186,6 +197,20 @@ class UC2SerialController:
                 self._handle_pwm_update(data.get('data', {}))
             elif msg_type == 'sample_map_click':
                 self._handle_sample_map_click(data.get('data', {}))
+            
+            # Handle command messages (user interactions with ESP32 display)
+            elif msg_type == 'objective_slot_command':
+                self._handle_objective_slot_command(data.get('data', {}))
+            elif msg_type == 'motor_command':
+                self._handle_motor_command(data.get('data', {}))
+            elif msg_type == 'motor_xy_command':
+                self._handle_motor_xy_command(data.get('data', {}))
+            elif msg_type == 'led_command':
+                self._handle_led_command(data.get('data', {}))
+            elif msg_type == 'pwm_command':
+                self._handle_pwm_command(data.get('data', {}))
+            elif msg_type == 'snap_image_command':
+                self._handle_snap_image_command(data.get('data', {}))
             else:
                 self.logger.debug(f"Unknown message type: {msg_type}")
                 
@@ -258,6 +283,48 @@ class UC2SerialController:
         self.logger.info(f"Sample map clicked at ({pixel_x}, {pixel_y}), sample #{sample_number}")
         self._notify_callbacks('sample_position_update', data)
     
+    # Command message handlers (user interactions with ESP32 display)
+    def _handle_objective_slot_command(self, data: Dict[str, Any]):
+        """Handle objective slot command from display"""
+        slot = data.get('slot', 1)
+        self.logger.info(f"User selected objective slot {slot} on display")
+        self._notify_callbacks('objective_slot_command', data)
+    
+    def _handle_motor_command(self, data: Dict[str, Any]):
+        """Handle motor command from display"""
+        motor = data.get('motor', 0)
+        speed = data.get('speed', 0)
+        self.logger.info(f"User set motor {motor} to speed {speed} on display")
+        self._notify_callbacks('motor_command', data)
+    
+    def _handle_motor_xy_command(self, data: Dict[str, Any]):
+        """Handle XY motor command from display"""
+        speed_x = data.get('speedX', 0)
+        speed_y = data.get('speedY', 0)
+        self.logger.info(f"User set XY motors to speeds X={speed_x}, Y={speed_y} on display")
+        self._notify_callbacks('motor_xy_command', data)
+    
+    def _handle_led_command(self, data: Dict[str, Any]):
+        """Handle LED command from display"""
+        enabled = data.get('enabled', False)
+        r = data.get('r', 0)
+        g = data.get('g', 0)
+        b = data.get('b', 0)
+        self.logger.info(f"User set LED on display: enabled={enabled}, RGB=({r}, {g}, {b})")
+        self._notify_callbacks('led_command', data)
+    
+    def _handle_pwm_command(self, data: Dict[str, Any]):
+        """Handle PWM command from display"""
+        channel = data.get('channel', 0)
+        value = data.get('value', 0)
+        self.logger.info(f"User set PWM channel {channel} to {value} on display")
+        self._notify_callbacks('pwm_command', data)
+    
+    def _handle_snap_image_command(self, data: Dict[str, Any]):
+        """Handle snap image command from display"""
+        self.logger.info("User pressed snap image button on display")
+        self._notify_callbacks('snap_image_command', data)
+    
     def _send_message(self, message_dict: Dict[str, Any]):
         """Send message to ESP32"""
         if not self.is_connected or not self.serial_conn:
@@ -313,6 +380,63 @@ class UC2SerialController:
     def on_connection_changed(self, callback: Callable[[Dict[str, Any]], None]):
         """Register callback for connection changes"""
         self.callbacks['connection_changed'].append(callback)
+    
+    # Command event callback registration (user interactions with ESP32 display)
+    def on_objective_slot_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for objective slot commands from display"""
+        self.callbacks['objective_slot_command'].append(callback)
+    
+    def on_motor_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for motor commands from display"""
+        self.callbacks['motor_command'].append(callback)
+    
+    def on_motor_xy_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for XY motor commands from display"""
+        self.callbacks['motor_xy_command'].append(callback)
+    
+    def on_led_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for LED commands from display"""
+        self.callbacks['led_command'].append(callback)
+    
+    def on_pwm_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for PWM commands from display"""
+        self.callbacks['pwm_command'].append(callback)
+    
+    def on_snap_image_command(self, callback: Callable[[Dict[str, Any]], None]):
+        """Register callback for snap image commands from display"""
+        self.callbacks['snap_image_command'].append(callback)
+    
+    def send_image_on_snap(self, image_source_callback: Callable[[], Union[np.ndarray, str, None]]):
+        """
+        Convenience method to automatically send an image when snap button is pressed
+        
+        Args:
+            image_source_callback: Function that returns image data when called.
+                                 Should return numpy array, file path, or None
+        
+        Example:
+            def get_current_camera_frame():
+                # Your camera capture logic here
+                return camera.capture()  # Returns numpy array
+            
+            controller.send_image_on_snap(get_current_camera_frame)
+        """
+        def snap_handler(data):
+            try:
+                image = image_source_callback()
+                if image is not None:
+                    timestamp = time.strftime("%H:%M:%S")
+                    success = self.send_image(image, f"Snap {timestamp}")
+                    if success:
+                        self.logger.info("Image sent to display after snap command")
+                    else:
+                        self.logger.error("Failed to send image to display")
+                else:
+                    self.logger.warning("Image source callback returned None")
+            except Exception as e:
+                self.logger.error(f"Error in snap image handler: {e}")
+        
+        self.on_snap_image_command(snap_handler)
     
     # Command methods
     def request_status(self):
@@ -400,6 +524,121 @@ class UC2SerialController:
                 "steps": steps
             }
         })
+    
+    def send_image(self, image: Union[np.ndarray, str], tab_name: str = "Captured Image", 
+                   max_width: int = 240, max_height: int = 160):
+        """
+        Send an image to display on ESP32 as a new tab
+        
+        Args:
+            image: Numpy array (H, W, 3) RGB image, or path to image file
+            tab_name: Name for the image tab (max 15 characters)
+            max_width: Maximum width to resize image to fit ESP32 memory
+            max_height: Maximum height to resize image to fit ESP32 memory
+        
+        Returns:
+            bool: True if message sent successfully
+        """
+        try:
+            # Import PIL for image processing
+            try:
+                from PIL import Image
+            except ImportError:
+                self.logger.error("PIL (Pillow) is required for image processing. Install with: pip install Pillow")
+                return False
+            
+            # Handle file path input
+            if isinstance(image, str):
+                if not os.path.exists(image):
+                    self.logger.error(f"Image file not found: {image}")
+                    return False
+                pil_image = Image.open(image).convert('RGB')
+                image_array = np.array(pil_image)
+            else:
+                # Handle numpy array input
+                if not isinstance(image, np.ndarray):
+                    self.logger.error("Image must be a numpy array or file path")
+                    return False
+                    
+                if image.dtype != np.uint8:
+                    # Convert to uint8 if needed
+                    if image.max() <= 1.0:
+                        image = (image * 255).astype(np.uint8)
+                    else:
+                        image = image.astype(np.uint8)
+                
+                # Ensure RGB format
+                if len(image.shape) == 2:
+                    # Grayscale to RGB
+                    image_array = np.stack([image, image, image], axis=-1)
+                elif len(image.shape) == 3 and image.shape[2] == 4:
+                    # RGBA to RGB
+                    image_array = image[:, :, :3]
+                elif len(image.shape) == 3 and image.shape[2] == 3:
+                    image_array = image
+                else:
+                    self.logger.error(f"Unsupported image shape: {image.shape}")
+                    return False
+            
+            height, width = image_array.shape[:2]
+            
+            # Resize if image is too large
+            if width > max_width or height > max_height:
+                pil_image = Image.fromarray(image_array)
+                # Calculate aspect ratio preserving resize
+                ratio = min(max_width / width, max_height / height)
+                new_width = int(width * ratio)
+                new_height = int(height * ratio)
+                pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                image_array = np.array(pil_image)
+                self.logger.info(f"Resized image from {width}x{height} to {new_width}x{new_height}")
+            
+            # Convert RGB888 to RGB565 format for ESP32
+            rgb565_data = self._convert_to_rgb565(image_array)
+            
+            # Encode as base64 for JSON transmission
+            image_b64 = base64.b64encode(rgb565_data).decode('utf-8')
+            
+            # Truncate tab name if too long
+            tab_name = tab_name[:15]
+            
+            # Send image display command
+            return self._send_message({
+                "type": "display_image_command",
+                "data": {
+                    "tab_name": tab_name,
+                    "width": image_array.shape[1],
+                    "height": image_array.shape[0],
+                    "format": "rgb565",
+                    "image_data": image_b64
+                }
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Failed to send image: {e}")
+            return False
+    
+    def _convert_to_rgb565(self, image_rgb: np.ndarray) -> bytes:
+        """Convert RGB888 image to RGB565 format for ESP32 display"""
+        height, width = image_rgb.shape[:2]
+        rgb565_data = []
+        
+        for y in range(height):
+            for x in range(width):
+                # Convert to int to avoid numpy uint8 overflow issues
+                r, g, b = int(image_rgb[y, x, 0]), int(image_rgb[y, x, 1]), int(image_rgb[y, x, 2])
+                
+                # Convert 8-bit RGB to 5-6-5 bit RGB565
+                r5 = (r >> 3) & 0x1F  # 5 bits
+                g6 = (g >> 2) & 0x3F  # 6 bits  
+                b5 = (b >> 3) & 0x1F  # 5 bits
+                
+                # Pack into 16-bit RGB565 format (little endian for ESP32)
+                rgb565 = (r5 << 11) | (g6 << 5) | b5
+                rgb565_data.append(rgb565 & 0xFF)        # Low byte first
+                rgb565_data.append((rgb565 >> 8) & 0xFF) # High byte
+        
+        return bytes(rgb565_data)
     
     # Property accessors
     @property

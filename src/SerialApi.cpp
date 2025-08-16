@@ -74,7 +74,8 @@ namespace SerialApi
 
     void handleIncomingMessage(const String& message)
     {
-        DynamicJsonDocument doc(1024);
+        // Increase buffer size to handle base64 encoded images (32KB buffer)
+        DynamicJsonDocument doc(32768);  
         DeserializationError error = deserializeJson(doc, message);
         
         if (error) {
@@ -193,6 +194,32 @@ namespace SerialApi
                 String responseStr;
                 serializeJson(response, responseStr);
                 serial_controller::sendMessage(responseStr);
+            }
+            else if (type == "display_image_command" && doc.containsKey("data")) {
+                JsonObject data = doc["data"];
+                if (data.containsKey("tab_name") && data.containsKey("width") && 
+                    data.containsKey("height") && data.containsKey("image_data")) {
+                    
+                    String tabName = data["tab_name"];
+                    int width = data["width"];
+                    int height = data["height"];
+                    String format = data.containsKey("format") ? data["format"] : "rgb565";
+                    String imageData = data["image_data"];
+                    
+                    // Handle image display request
+                    bool success = uc2ui_controller::displayImage(tabName, width, height, format, imageData);
+                    
+                    // Send acknowledgment
+                    DynamicJsonDocument response(512);
+                    response["type"] = "image_display_result";
+                    response["data"]["tab_name"] = tabName;
+                    response["data"]["width"] = width;
+                    response["data"]["height"] = height;
+                    response["data"]["success"] = success;
+                    String responseStr;
+                    serializeJson(response, responseStr);
+                    serial_controller::sendMessage(responseStr);
+                }
             }
         }
     }
