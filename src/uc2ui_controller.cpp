@@ -2,6 +2,12 @@
 #include "uc2ui_wifipage.h"
 #include "Arduino.h"
 #include "uc2ui_microscopepage.h"
+#include "uc2ui_motorpage.h"
+#include "uc2ui_ledpage.h"
+#include "uc2ui_objectivepage.h"
+#include "uc2ui_laserspage.h"
+#include "uc2ui_samplemappage.h"
+#include "uc2ui_acquisitionpage.h"
 #include "lvgl_helper.h"
 
 namespace uc2ui_controller
@@ -58,18 +64,49 @@ namespace uc2ui_controller
         lv_obj_set_align(keyboard, LV_ALIGN_BOTTOM_MID);
         lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 
-        wifiPage = lv_tabview_add_tab(ui_MainTabView, "Wifi");
-        uc2ui_wifipage::init_ui(wifiPage, on_textarea_focus_event);
+        // WiFi tab disabled for serial interface mode
+        // wifiPage = lv_tabview_add_tab(ui_MainTabView, "Wifi");
+        // uc2ui_wifipage::init_ui(wifiPage, on_textarea_focus_event);
 
-        microscopepage = lv_tabview_add_tab(ui_MainTabView, "Microscope");
-        uc2ui_microscopepage::initUi(microscopepage);
+        // Individual tabs replacing the nested Microscope tab structure
+        lv_obj_t *motorpage = lv_tabview_add_tab(ui_MainTabView, "Motor");
+        uc2ui_motorpage::initUI(motorpage);
+
+        lv_obj_t *ledpage = lv_tabview_add_tab(ui_MainTabView, "LED");
+        uc2ui_ledpage::initUI(ledpage);
+
+        lv_obj_t *objectivepage = lv_tabview_add_tab(ui_MainTabView, "Objective");
+        lv_obj_clear_flag(objectivepage, LV_OBJ_FLAG_SCROLLABLE);
+        uc2ui_objectivepage::initUI(objectivepage);
+
+        // TODO: Implement additional tabs as requested
+        lv_obj_t *sampleMappage = lv_tabview_add_tab(ui_MainTabView, "Sample Map");
+        uc2ui_samplemappage::initUI(sampleMappage);
+
+        lv_obj_t *laserspage = lv_tabview_add_tab(ui_MainTabView, "Lasers");
+        uc2ui_laserspage::initUI(laserspage);
+
+        lv_obj_t *acquisitionpage = lv_tabview_add_tab(ui_MainTabView, "Acquisition");
+        uc2ui_acquisitionpage::initUI(acquisitionpage);
 
         lv_disp_load_scr(mainScreen);
+        
+        // Apply any deferred state that was set before UI was ready
+        showMicroscopePage(true);
+        
     }
+
+    static bool microscope_page_should_be_shown = false;
 
     void showMicroscopePage(bool show)
     {
-        lvgl_helper::setVisibility(microscopepage,show);
+        if (microscopepage == nullptr) {
+            // UI not initialized yet, remember the state for later
+            microscope_page_should_be_shown = show;
+            return;
+        }
+        lvgl_helper::setVisibility(microscopepage, show);
+        microscope_page_should_be_shown = false;
     }
 
 }

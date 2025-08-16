@@ -4,23 +4,37 @@
 namespace uc2ui_motorpage
 {
 
+    // Prevent scroll and gesture bubbling on joystick-related objects
+    static void prevent_scroll_events(lv_event_t * e)
+    {
+        lv_event_code_t code = lv_event_get_code(e);
+        if (code == LV_EVENT_GESTURE ||
+            code == LV_EVENT_SCROLL_BEGIN ||
+            code == LV_EVENT_SCROLL ||
+            code == LV_EVENT_SCROLL_END) {
+            // Stop this event from bubbling up and from being processed further
+            lv_event_stop_bubbling(e);
+            lv_event_stop_processing(e);
+        }
+    }
+
     bool motor_module = false;
     bool a_motor = false;
     bool x_motor = false;
     bool y_motor = false;
     bool z_motor = false;
-    lv_obj_t *motorPanel;;
-    lv_obj_t *motorASlider;
-    lv_obj_t *motorXSlider;
-    lv_obj_t *motorYSlider;
-    lv_obj_t *motorZSlider;
-    lv_obj_t *LabelA;
-    lv_obj_t *LabelX;
-    lv_obj_t *LabelY;
-    lv_obj_t *LabelZ;
+    lv_obj_t *motorPanel = nullptr;
+    lv_obj_t *motorASlider = nullptr;
+    lv_obj_t *motorXSlider = nullptr;
+    lv_obj_t *motorYSlider = nullptr;
+    lv_obj_t *motorZSlider = nullptr;
+    lv_obj_t *LabelA = nullptr;
+    lv_obj_t *LabelX = nullptr;
+    lv_obj_t *LabelY = nullptr;
+    lv_obj_t *LabelZ = nullptr;
 
-    lv_obj_t *joyContainer;
-    lv_obj_t *joyButton;
+    lv_obj_t *joyContainer = nullptr;
+    lv_obj_t *joyButton = nullptr;
     const int centerx = 400;
     const int centery = 240;
     const int halfsizecontainer = 175;
@@ -29,10 +43,25 @@ namespace uc2ui_motorpage
     int joybutton_real_x_pos;
 
     void (*updateMotorSpeedListner)(int motor, int speed);
+    void (*moveMotorStepsListner)(int motor, int steps);
 
     void setUpdateMotorSpeedListner(void updateMotorSpeed(int motor, int speed))
     {
         updateMotorSpeedListner = updateMotorSpeed;
+    }
+
+    void setMoveMotorStepsListner(void moveMotorSteps(int motor, int steps))
+    {
+        moveMotorStepsListner = moveMotorSteps;
+    }
+
+    // Handle external step commands (e.g., from SerialApi)
+    void handleStepCommand(int motor, int steps)
+    {
+        // Call the registered listener if available
+        if (moveMotorStepsListner != nullptr) {
+            moveMotorStepsListner(motor, steps);
+        }
     }
 
     void (*driveXYMotor)(int speedX, int speedY);
@@ -97,39 +126,54 @@ namespace uc2ui_motorpage
     void setMotorModule(bool enable)
     {
         motor_module = enable;
-        lvgl_helper::setVisibility(motorPanel, enable);
+        // Only update visibility if UI has been initialized
+        if (motorPanel != nullptr) {
+            lvgl_helper::setVisibility(motorPanel, enable);
+        }
     }
 
     void setMotorX(bool enable)
     {
         x_motor = enable;
-        lvgl_helper::setVisibility(motorXSlider, enable);
-        lvgl_helper::setVisibility(LabelX, enable);
-        if (y_motor && x_motor)
-            lvgl_helper::setVisibility(joyContainer, enable);
+        // Only update visibility if UI has been initialized
+        if (motorXSlider != nullptr && LabelX != nullptr) {
+            lvgl_helper::setVisibility(motorXSlider, enable);
+            lvgl_helper::setVisibility(LabelX, enable);
+            if (y_motor && x_motor && joyContainer != nullptr)
+                lvgl_helper::setVisibility(joyContainer, enable);
+        }
     }
 
     void setMotorY(bool enable)
     {
         y_motor = enable;
-        lvgl_helper::setVisibility(motorYSlider, enable);
-        lvgl_helper::setVisibility(LabelY, enable);
-        if (y_motor && x_motor)
-            lvgl_helper::setVisibility(joyContainer, enable);
+        // Only update visibility if UI has been initialized
+        if (motorYSlider != nullptr && LabelY != nullptr) {
+            lvgl_helper::setVisibility(motorYSlider, enable);
+            lvgl_helper::setVisibility(LabelY, enable);
+            if (y_motor && x_motor && joyContainer != nullptr)
+                lvgl_helper::setVisibility(joyContainer, enable);
+        }
     }
 
     void setMotorZ(bool enable)
     {
         z_motor = enable;
-        lvgl_helper::setVisibility(motorZSlider, enable);
-        lvgl_helper::setVisibility(LabelZ, enable);
+        // Only update visibility if UI has been initialized
+        if (motorZSlider != nullptr && LabelZ != nullptr) {
+            lvgl_helper::setVisibility(motorZSlider, enable);
+            lvgl_helper::setVisibility(LabelZ, enable);
+        }
     }
 
     void setMotorA(bool enable)
     {
         a_motor = enable;
-        lvgl_helper::setVisibility(motorASlider, enable);
-        lvgl_helper::setVisibility(LabelA, enable);
+        // Only update visibility if UI has been initialized
+        if (motorASlider != nullptr && LabelA != nullptr) {
+            lvgl_helper::setVisibility(motorASlider, enable);
+            lvgl_helper::setVisibility(LabelA, enable);
+        }
     }
 
 void joyButtonEventListner(lv_event_t *e)
@@ -180,10 +224,41 @@ void joyButtonEventListner(lv_event_t *e)
 
     void initUI(lv_obj_t *container)
     {
+        // Create a tabview for motor controls
+        lv_obj_t *motor_tabview = lv_tabview_create(container, LV_DIR_TOP, 40);
+    // Disable any scroll/gesture behavior on tabview and its content
+    lv_obj_t *tv_content = lv_tabview_get_content(motor_tabview);
+    lv_obj_clear_flag(tv_content, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(tv_content, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(tv_content, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_clear_flag(motor_tabview, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(motor_tabview, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(motor_tabview, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+        
+        // Tab 1: Joystick control
+        lv_obj_t *joystick_tab = lv_tabview_add_tab(motor_tabview, "Joystick");
+        initJoystickUI(joystick_tab);
+        
+        // Tab 2: Step movements
+        lv_obj_t *step_tab = lv_tabview_add_tab(motor_tabview, "Steps");
+        initStepUI(step_tab);
+    }
+
+    void initJoystickUI(lv_obj_t *container)
+    {
+    // Ensure the tab container itself doesn't scroll or bubble gestures
+    lv_obj_clear_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(container, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(container, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_add_event_cb(container, prevent_scroll_events, LV_EVENT_ALL, NULL);
+
         motorPanel = lv_obj_create(container);
         lv_obj_set_height(motorPanel, 350);
         lv_obj_set_width(motorPanel, lv_pct(50));
         lv_obj_clear_flag(motorPanel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(motorPanel, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(motorPanel, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_add_event_cb(motorPanel, prevent_scroll_events, LV_EVENT_ALL, NULL);
         lvgl_helper::setVisibility(motorPanel, false);
 
         motorASlider = lv_slider_create(motorPanel);
@@ -267,12 +342,15 @@ void joyButtonEventListner(lv_event_t *e)
         lv_obj_add_event_cb(motorYSlider, onMotorYchanged, LV_EVENT_ALL, NULL);
         lv_obj_add_event_cb(motorZSlider, onMotorZchanged, LV_EVENT_ALL, NULL);
 
-        joyContainer = lv_obj_create(container);
+    joyContainer = lv_obj_create(container);
         lv_obj_remove_style_all(joyContainer);
         lv_obj_set_width(joyContainer, 350);
         lv_obj_set_height(joyContainer, 350);
         lv_obj_set_align(joyContainer, LV_ALIGN_TOP_RIGHT);
-        lv_obj_clear_flag(joyContainer, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(joyContainer, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(joyContainer, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(joyContainer, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_add_event_cb(joyContainer, prevent_scroll_events, LV_EVENT_ALL, NULL);
         lv_obj_set_style_radius(joyContainer, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_bg_color(joyContainer, lv_color_hex(0x7E7E7E), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_bg_opa(joyContainer, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -280,7 +358,7 @@ void joyButtonEventListner(lv_event_t *e)
         lv_obj_set_style_bg_color(joyContainer, lv_color_hex(0xFFFFFF), LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
         lv_obj_set_style_bg_opa(joyContainer, 255, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
 
-        joyButton = lv_btn_create(joyContainer);
+    joyButton = lv_btn_create(joyContainer);
         lv_obj_set_width(joyButton, 50);
         lv_obj_set_height(joyButton, 50);
         lv_obj_set_align(joyButton, LV_ALIGN_CENTER);
@@ -291,13 +369,189 @@ void joyButtonEventListner(lv_event_t *e)
         lv_obj_get_coords(joyButton,&c);
         joybutton_real_x_pos = c.x1 + (c.x1 - c.x2 / 2);
         //lv_obj_add_flag(joyButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
-        lv_obj_clear_flag(joyButton, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(joyButton, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(joyButton, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_clear_flag(joyButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_add_event_cb(joyButton, prevent_scroll_events, LV_EVENT_ALL, NULL);
         lv_obj_set_style_radius(joyButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_bg_color(joyButton, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_bg_opa(joyButton, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
         lv_obj_add_event_cb(joyButton, joyButtonEventListner, LV_EVENT_ALL, NULL);
 
+        // Apply current motor states after UI initialization
+        applyCurrentStates();
+        
         // hideAllMotorViews();
+    }
+
+    void applyCurrentStates()
+    {
+        // Apply the current motor states that were set before UI initialization
+        setMotorModule(motor_module);
+        setMotorA(a_motor);
+        setMotorX(x_motor);
+        setMotorY(y_motor);
+        setMotorZ(z_motor);
+    }
+
+    void initStepUI(lv_obj_t *container)
+    {
+        // Create container for step movement buttons
+        lv_obj_t *step_container = lv_obj_create(container);
+        lv_obj_set_size(step_container, lv_pct(100), lv_pct(100));
+        lv_obj_set_flex_flow(step_container, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(step_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_all(step_container, 20, 0);
+        
+        // Title
+        lv_obj_t *title = lv_label_create(step_container);
+        lv_label_set_text(title, "Step Movement Control");
+        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+        lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_width(title, lv_pct(100));
+        
+        // X-axis controls
+        lv_obj_t *x_container = lv_obj_create(step_container);
+        lv_obj_set_size(x_container, lv_pct(90), 80);
+        lv_obj_set_flex_flow(x_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(x_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        
+        lv_obj_t *x_label = lv_label_create(x_container);
+        lv_label_set_text(x_label, "X:");
+        lv_obj_set_style_text_font(x_label, &lv_font_montserrat_18, 0);
+        
+        lv_obj_t *x_minus_1000 = lv_btn_create(x_container);
+        lv_obj_set_size(x_minus_1000, 80, 40);
+        lv_obj_t *x_minus_1000_label = lv_label_create(x_minus_1000);
+        lv_label_set_text(x_minus_1000_label, "-1000");
+        lv_obj_center(x_minus_1000_label);
+        lv_obj_add_event_cb(x_minus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)0); // X motor, -1000
+        
+        lv_obj_t *x_minus_10 = lv_btn_create(x_container);
+        lv_obj_set_size(x_minus_10, 60, 40);
+        lv_obj_t *x_minus_10_label = lv_label_create(x_minus_10);
+        lv_label_set_text(x_minus_10_label, "-10");
+        lv_obj_center(x_minus_10_label);
+        lv_obj_add_event_cb(x_minus_10, step_button_cb, LV_EVENT_CLICKED, (void*)1); // X motor, -10
+        
+        lv_obj_t *x_plus_10 = lv_btn_create(x_container);
+        lv_obj_set_size(x_plus_10, 60, 40);
+        lv_obj_t *x_plus_10_label = lv_label_create(x_plus_10);
+        lv_label_set_text(x_plus_10_label, "+10");
+        lv_obj_center(x_plus_10_label);
+        lv_obj_add_event_cb(x_plus_10, step_button_cb, LV_EVENT_CLICKED, (void*)2); // X motor, +10
+        
+        lv_obj_t *x_plus_1000 = lv_btn_create(x_container);
+        lv_obj_set_size(x_plus_1000, 80, 40);
+        lv_obj_t *x_plus_1000_label = lv_label_create(x_plus_1000);
+        lv_label_set_text(x_plus_1000_label, "+1000");
+        lv_obj_center(x_plus_1000_label);
+        lv_obj_add_event_cb(x_plus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)3); // X motor, +1000
+        
+        // Y-axis controls
+        lv_obj_t *y_container = lv_obj_create(step_container);
+        lv_obj_set_size(y_container, lv_pct(90), 80);
+        lv_obj_set_flex_flow(y_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(y_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        
+        lv_obj_t *y_label = lv_label_create(y_container);
+        lv_label_set_text(y_label, "Y:");
+        lv_obj_set_style_text_font(y_label, &lv_font_montserrat_18, 0);
+        
+        lv_obj_t *y_minus_1000 = lv_btn_create(y_container);
+        lv_obj_set_size(y_minus_1000, 80, 40);
+        lv_obj_t *y_minus_1000_label = lv_label_create(y_minus_1000);
+        lv_label_set_text(y_minus_1000_label, "-1000");
+        lv_obj_center(y_minus_1000_label);
+        lv_obj_add_event_cb(y_minus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)4); // Y motor, -1000
+        
+        lv_obj_t *y_minus_10 = lv_btn_create(y_container);
+        lv_obj_set_size(y_minus_10, 60, 40);
+        lv_obj_t *y_minus_10_label = lv_label_create(y_minus_10);
+        lv_label_set_text(y_minus_10_label, "-10");
+        lv_obj_center(y_minus_10_label);
+        lv_obj_add_event_cb(y_minus_10, step_button_cb, LV_EVENT_CLICKED, (void*)5); // Y motor, -10
+        
+        lv_obj_t *y_plus_10 = lv_btn_create(y_container);
+        lv_obj_set_size(y_plus_10, 60, 40);
+        lv_obj_t *y_plus_10_label = lv_label_create(y_plus_10);
+        lv_label_set_text(y_plus_10_label, "+10");
+        lv_obj_center(y_plus_10_label);
+        lv_obj_add_event_cb(y_plus_10, step_button_cb, LV_EVENT_CLICKED, (void*)6); // Y motor, +10
+        
+        lv_obj_t *y_plus_1000 = lv_btn_create(y_container);
+        lv_obj_set_size(y_plus_1000, 80, 40);
+        lv_obj_t *y_plus_1000_label = lv_label_create(y_plus_1000);
+        lv_label_set_text(y_plus_1000_label, "+1000");
+        lv_obj_center(y_plus_1000_label);
+        lv_obj_add_event_cb(y_plus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)7); // Y motor, +1000
+        
+        // Z-axis controls
+        lv_obj_t *z_container = lv_obj_create(step_container);
+        lv_obj_set_size(z_container, lv_pct(90), 80);
+        lv_obj_set_flex_flow(z_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(z_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        
+        lv_obj_t *z_label = lv_label_create(z_container);
+        lv_label_set_text(z_label, "Z:");
+        lv_obj_set_style_text_font(z_label, &lv_font_montserrat_18, 0);
+        
+        lv_obj_t *z_minus_1000 = lv_btn_create(z_container);
+        lv_obj_set_size(z_minus_1000, 80, 40);
+        lv_obj_t *z_minus_1000_label = lv_label_create(z_minus_1000);
+        lv_label_set_text(z_minus_1000_label, "-1000");
+        lv_obj_center(z_minus_1000_label);
+        lv_obj_add_event_cb(z_minus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)8); // Z motor, -1000
+        
+        lv_obj_t *z_minus_10 = lv_btn_create(z_container);
+        lv_obj_set_size(z_minus_10, 60, 40);
+        lv_obj_t *z_minus_10_label = lv_label_create(z_minus_10);
+        lv_label_set_text(z_minus_10_label, "-10");
+        lv_obj_center(z_minus_10_label);
+        lv_obj_add_event_cb(z_minus_10, step_button_cb, LV_EVENT_CLICKED, (void*)9); // Z motor, -10
+        
+        lv_obj_t *z_plus_10 = lv_btn_create(z_container);
+        lv_obj_set_size(z_plus_10, 60, 40);
+        lv_obj_t *z_plus_10_label = lv_label_create(z_plus_10);
+        lv_label_set_text(z_plus_10_label, "+10");
+        lv_obj_center(z_plus_10_label);
+        lv_obj_add_event_cb(z_plus_10, step_button_cb, LV_EVENT_CLICKED, (void*)10); // Z motor, +10
+        
+        lv_obj_t *z_plus_1000 = lv_btn_create(z_container);
+        lv_obj_set_size(z_plus_1000, 80, 40);
+        lv_obj_t *z_plus_1000_label = lv_label_create(z_plus_1000);
+        lv_label_set_text(z_plus_1000_label, "+1000");
+        lv_obj_center(z_plus_1000_label);
+        lv_obj_add_event_cb(z_plus_1000, step_button_cb, LV_EVENT_CLICKED, (void*)11); // Z motor, +1000
+    }
+
+    void step_button_cb(lv_event_t *e)
+    {
+        int button_id = (int)lv_event_get_user_data(e);
+        
+        // Map button ID to motor and step
+        int motor = 0;
+        int step = 0;
+        
+        switch(button_id) {
+            case 0: motor = 1; step = -1000; break; // X motor, -1000
+            case 1: motor = 1; step = -10; break;   // X motor, -10  
+            case 2: motor = 1; step = 10; break;    // X motor, +10
+            case 3: motor = 1; step = 1000; break;  // X motor, +1000
+            case 4: motor = 2; step = -1000; break; // Y motor, -1000
+            case 5: motor = 2; step = -10; break;   // Y motor, -10
+            case 6: motor = 2; step = 10; break;    // Y motor, +10
+            case 7: motor = 2; step = 1000; break;  // Y motor, +1000
+            case 8: motor = 3; step = -1000; break; // Z motor, -1000
+            case 9: motor = 3; step = -10; break;   // Z motor, -10
+            case 10: motor = 3; step = 10; break;   // Z motor, +10
+            case 11: motor = 3; step = 1000; break; // Z motor, +1000
+        }
+        
+        // Send step command via serial (positions, not speeds)
+        if (moveMotorStepsListner != nullptr) {
+            moveMotorStepsListner(motor, step);
+        }
     }
 }

@@ -33,16 +33,22 @@ namespace uc2ui_ledpage
     void setLedModule(bool enable)
     {
         led_module = enable;
-        lvgl_helper::setVisibility(ledPanel, enable);
+        // Only update visibility if UI has been initialized
+        if (ledPanel != nullptr) {
+            lvgl_helper::setVisibility(ledPanel, enable);
+        }
     }
 
     void setLedOn(bool on)
     {
         led_on = on;
-        if (on)
-            lv_obj_add_state(LedOnCheckBox, LV_STATE_CHECKED);
-        else
-            lv_obj_clear_state(LedOnCheckBox, LV_STATE_CHECKED);
+        // Only update state if UI has been initialized
+        if (LedOnCheckBox != nullptr) {
+            if (on)
+                lv_obj_add_state(LedOnCheckBox, LV_STATE_CHECKED);
+            else
+                lv_obj_clear_state(LedOnCheckBox, LV_STATE_CHECKED);
+        }
     }
 
     void setLedCount(int count)
@@ -59,8 +65,12 @@ namespace uc2ui_ledpage
             int r = lv_slider_get_value(SliderRed);
             int g = lv_slider_get_value(SliderGreen);
             int b = lv_slider_get_value(SliderBlue);
-            if (updatedColorsListner != nullptr)
+            if (updatedColorsListner != nullptr){
+                // add delay
+                // vTaskDelay(10);
                 updatedColorsListner(r, g, b);
+                // vTaskDelay(10);
+            }
         }
     }
 
@@ -180,6 +190,27 @@ namespace uc2ui_ledpage
         lvgl_helper::setVisibility(ledPanel, false);
 
         initLedPanel();
+        
+        // Apply current LED states after UI initialization
+        applyCurrentStates();
     }
 
+    void applyCurrentStates()
+    {
+        // Apply the current LED states that were set before UI initialization
+        setLedModule(led_module);
+        setLedOn(led_on);
+        // LED count doesn't need UI update, just store the value
+    }
+
+    void updateColorSliders(int r, int g, int b)
+    {
+        // Update slider values if UI has been initialized
+        if (SliderRed != nullptr && SliderGreen != nullptr && SliderBlue != nullptr) {
+            lv_slider_set_value(SliderRed, r, LV_ANIM_OFF);
+            lv_slider_set_value(SliderGreen, g, LV_ANIM_OFF);
+            lv_slider_set_value(SliderBlue, b, LV_ANIM_OFF);
+        }
+    }
 }
+    

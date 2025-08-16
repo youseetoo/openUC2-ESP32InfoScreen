@@ -39,16 +39,15 @@
         .clk_src = LCD_CLK_SRC_PLL160M,                                                 \
         .timings = RGB_TIMING_CONFIG_DEFAULT(width, height),                            \
         .data_width = 16,                                                               \
-        .psram_trans_align = 64,                                                        \
+        .dma_burst_size = 64,                                                        \
         .hsync_gpio_num = hsync,                                                        \
         .vsync_gpio_num = vsync,                                                        \
         .de_gpio_num = de,                                                              \
         .pclk_gpio_num = pclk,                                                          \
+        .disp_gpio_num = disp,                                                          \
         .data_gpio_nums = {                                                             \
             D0, D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15        \
         },                                                                              \
-        .disp_gpio_num = disp,                                                          \
-        .on_frame_trans_done = (esp_lcd_rgb_panel_frame_trans_done_cb_t)callback,       \
         .flags = {                                                                      \
             .fb_in_psram = 1,                                                           \
         },                                                                              \
