@@ -74,8 +74,8 @@ namespace SerialApi
 
     void handleIncomingMessage(const String& message)
     {
-        // Increase buffer size to handle base64 encoded images
-        DynamicJsonDocument doc(16384);  // 16KB buffer for image data
+        // Increase buffer size to handle base64 encoded images (32KB buffer)
+        DynamicJsonDocument doc(32768);  
         DeserializationError error = deserializeJson(doc, message);
         
         if (error) {

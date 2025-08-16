@@ -214,6 +214,18 @@ All communication uses JSON messages over serial (115200 baud).
     "type": "snap_image_command"
 }
 
+// Image Display
+{
+    "type": "display_image_command",
+    "data": {
+        "tab_name": "Live View",
+        "width": 160,
+        "height": 120,
+        "format": "rgb565",
+        "image_data": "base64_encoded_rgb565_image_data..."
+    }
+}
+
 // Sample Position
 {
     "type": "sample_position_command",
@@ -290,6 +302,17 @@ All communication uses JSON messages over serial (115200 baud).
     "type": "image_captured",
     "data": {}
 }
+
+// Image Display Result
+{
+    "type": "image_display_result",
+    "data": {
+        "tab_name": "Live View",
+        "width": 160,
+        "height": 120,
+        "success": true
+    }
+}
 ```
 
 ## Installation & Usage
@@ -318,6 +341,7 @@ All communication uses JSON messages over serial (115200 baud).
 2. **Basic Usage:**
    ```python
    from uc2_serial_controller import UC2SerialController, find_esp32_port
+   import numpy as np
    
    # Auto-detect ESP32
    port = find_esp32_port()
@@ -328,13 +352,65 @@ All communication uses JSON messages over serial (115200 baud).
        controller.set_led(True, 255, 0, 0)  # Red LED
        controller.set_objective_slot(2)      # Switch to slot 2
        controller.snap_image()               # Take picture
+       
+       # Send image to display
+       test_image = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+       controller.send_image(test_image, "Test Image")
+   ```
+
+3. **Image Display Features:**
+   ```python
+   # Send numpy array to display
+   camera_frame = capture_microscope_image()
+   controller.send_image(camera_frame, "Live View")
+   
+   # Automatic image capture on snap button press
+   def get_current_frame():
+       return camera.capture()
+   
+   controller.send_image_on_snap(get_current_frame)
+   # Now pressing "CAPTURE IMAGE" button creates new image tabs automatically!
    ```
 
 3. **Run Examples:**
    ```bash
-   python example.py           # Full demonstration
-   python test_controller.py   # Test suite
+   python example.py                    # Full demonstration
+   python test_controller.py           # Test suite
+   python simple_image_example.py      # Basic image display
+   python base64_encoding_example.py   # Base64 encoding demonstration
+   python test_image_protocol.py       # Image protocol integration test
    ```
+
+## Image Display System
+
+### Overview
+The ESP32 can receive and display images sent from Python applications as new tabs in the LVGL interface. This enables real-time microscopy image viewing directly on the ESP32 display.
+
+### Image Processing Pipeline
+1. **Python Side**: 
+   - Accepts numpy arrays, image files (JPG, PNG), grayscale, RGBA formats
+   - Automatically converts to RGB888 format
+   - Resizes images to fit ESP32 memory constraints (240x160 max recommended)
+   - Converts RGB888 to RGB565 format for efficiency
+   - Base64 encodes for JSON transmission
+
+2. **ESP32 Side**:
+   - Receives `display_image_command` via 32KB JSON buffer
+   - Base64 decodes image data using improved decoder
+   - Allocates memory in SPIRAM if available
+   - Creates LVGL image descriptor and tab
+   - Displays with close button for memory cleanup
+
+### Supported Formats
+- **Input**: Numpy arrays (RGB, RGBA, grayscale), image files
+- **Transmission**: Base64-encoded RGB565 
+- **Display**: 16-bit RGB565 format optimized for ESP32
+
+### Memory Management
+- Automatic SPIRAM allocation for large images
+- Fallback to regular heap if SPIRAM unavailable  
+- Close button properly frees allocated memory
+- Image size validation prevents memory overflow
 
 ## Testing
 
