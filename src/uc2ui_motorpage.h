@@ -25,5 +25,5 @@ namespace uc2ui_motorpage
     void saveCurrentPosition();
     void deleteAllPositions();
     void deletePosition(int index);
-    void goToPosition(int index);
+    void goToStoredPosition(int index);
 }; // namespace uc2ui_motorpage

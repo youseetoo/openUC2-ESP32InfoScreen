@@ -64,12 +64,6 @@ namespace SerialApi
         
         uc2ui_ledpage::setLedModule(true);
         uc2ui_ledpage::setLedCount(1);
-        
-        // Set up motor page listeners
-        uc2ui_motorpage::setUpdateMotorSpeedListner(driveMotorForever);
-        uc2ui_motorpage::setMoveMotorStepsListner(moveMotorSteps);
-        uc2ui_motorpage::setDriveXYMotorListner(driveMotorXYForever);
-        uc2ui_motorpage::setGoToPositionListener(goToPosition);
     }
 
     void loop()

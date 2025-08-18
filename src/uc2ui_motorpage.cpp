@@ -580,6 +580,36 @@ void joyButtonEventListner(lv_event_t *e)
     }
 
     // Position management functions
+    static void goto_position_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            int index = (int)(intptr_t)lv_event_get_user_data(e);
+            goToStoredPosition(index);
+        }
+    }
+    
+    static void delete_position_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            int index = (int)(intptr_t)lv_event_get_user_data(e);
+            deletePosition(index);
+        }
+    }
+    
+    static void save_current_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            saveCurrentPosition();
+        }
+    }
+    
+    static void delete_all_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            deleteAllPositions();
+        }
+    }
+
     void setGoToPositionListener(void goToPosition(float x, float y, float z))
     {
         goToPositionListener = goToPosition;
@@ -647,12 +677,7 @@ void joyButtonEventListner(lv_event_t *e)
                 lv_obj_t *goto_label = lv_label_create(goto_btn);
                 lv_label_set_text(goto_label, LV_SYMBOL_PLAY);
                 lv_obj_center(goto_label);
-                lv_obj_add_event_cb(goto_btn, [](lv_event_t *e) {
-                    if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-                        int index = (int)(intptr_t)lv_event_get_user_data(e);
-                        goToPosition(index);
-                    }
-                }, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+                lv_obj_add_event_cb(goto_btn, goto_position_cb, LV_EVENT_CLICKED, (void*)(intptr_t)i);
                 
                 // Delete button
                 lv_obj_t *delete_btn = lv_btn_create(btn_container);
@@ -661,12 +686,7 @@ void joyButtonEventListner(lv_event_t *e)
                 lv_obj_t *delete_label = lv_label_create(delete_btn);
                 lv_label_set_text(delete_label, LV_SYMBOL_TRASH);
                 lv_obj_center(delete_label);
-                lv_obj_add_event_cb(delete_btn, [](lv_event_t *e) {
-                    if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-                        int index = (int)(intptr_t)lv_event_get_user_data(e);
-                        deletePosition(index);
-                    }
-                }, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+                lv_obj_add_event_cb(delete_btn, delete_position_cb, LV_EVENT_CLICKED, (void*)(intptr_t)i);
             }
         }
         preferences.end();
@@ -745,7 +765,7 @@ void joyButtonEventListner(lv_event_t *e)
         refreshPositionsList();
     }
 
-    void goToPosition(int index)
+    void goToStoredPosition(int index)
     {
         preferences.begin("positions", false);
         char key[16];
@@ -805,11 +825,7 @@ void joyButtonEventListner(lv_event_t *e)
         lv_obj_t *save_label = lv_label_create(save_btn);
         lv_label_set_text(save_label, "Save Current");
         lv_obj_center(save_label);
-        lv_obj_add_event_cb(save_btn, [](lv_event_t *e) {
-            if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-                saveCurrentPosition();
-            }
-        }, LV_EVENT_CLICKED, nullptr);
+        lv_obj_add_event_cb(save_btn, save_current_cb, LV_EVENT_CLICKED, nullptr);
         
         // Delete All button
         lv_obj_t *delete_all_btn = lv_btn_create(btn_container);
@@ -818,11 +834,7 @@ void joyButtonEventListner(lv_event_t *e)
         lv_obj_t *delete_all_label = lv_label_create(delete_all_btn);
         lv_label_set_text(delete_all_label, "Delete All");
         lv_obj_center(delete_all_label);
-        lv_obj_add_event_cb(delete_all_btn, [](lv_event_t *e) {
-            if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-                deleteAllPositions();
-            }
-        }, LV_EVENT_CLICKED, nullptr);
+        lv_obj_add_event_cb(delete_all_btn, delete_all_cb, LV_EVENT_CLICKED, nullptr);
         
         // Positions list
         positionsList = lv_obj_create(positionsContainer);
