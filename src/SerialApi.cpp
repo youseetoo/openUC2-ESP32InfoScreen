@@ -183,6 +183,32 @@ namespace SerialApi
                     serial_controller::sendMessage(responseStr);
                 }
             }
+            else if (type == "position_update" && doc.containsKey("data")) {
+                JsonObject data = doc["data"];
+                if (data.containsKey("x") && data.containsKey("y") && data.containsKey("z")) {
+                    float x = data["x"];
+                    float y = data["y"];
+                    float z = data["z"];
+                    
+                    // Update current position in motor page
+                    uc2ui_motorpage::updateCurrentPosition(x, y, z);
+                    
+                    // Update internal position tracking
+                    motorPositionX = (long)(x * 1000); // Convert to steps assuming 1000 steps per unit
+                    motorPositionY = (long)(y * 1000);
+                    motorPositionZ = (long)(z * 1000);
+                    
+                    // Send acknowledgment
+                    DynamicJsonDocument response(256);
+                    response["type"] = "position_update_ack";
+                    response["data"]["x"] = x;
+                    response["data"]["y"] = y;
+                    response["data"]["z"] = z;
+                    String responseStr;
+                    serializeJson(response, responseStr);
+                    serial_controller::sendMessage(responseStr);
+                }
+            }
             else if (type == "snap_image_command") {
                 // Handle image capture command
                 uc2ui_acquisitionpage::triggerCapture();
@@ -375,6 +401,16 @@ namespace SerialApi
         doc["data"]["pixel_x"] = pixel_x;
         doc["data"]["pixel_y"] = pixel_y;
         doc["data"]["sample_number"] = sample_number;
+        sendMessage(doc);
+    }
+
+    void goToPosition(float x, float y, float z)
+    {
+        DynamicJsonDocument doc(256);
+        doc["type"] = "goto_position_command";
+        doc["data"]["x"] = x;
+        doc["data"]["y"] = y;
+        doc["data"]["z"] = z;
         sendMessage(doc);
     }
 

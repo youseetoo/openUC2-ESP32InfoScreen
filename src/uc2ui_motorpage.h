@@ -17,4 +17,13 @@ namespace uc2ui_motorpage
     // Bridge for external step commands (e.g., from SerialApi)
     void handleStepCommand(int motor, int steps);
     void applyCurrentStates(); // Apply motor states after UI initialization
+    
+    // Position storage functions
+    void initPositionsUI(lv_obj_t *container);
+    void setGoToPositionListener(void goToPosition(float x, float y, float z));
+    void updateCurrentPosition(float x, float y, float z);
+    void saveCurrentPosition();
+    void deleteAllPositions();
+    void deletePosition(int index);
+    void goToStoredPosition(int index);
 }; // namespace uc2ui_motorpage

@@ -1,5 +1,6 @@
 #include "uc2ui_motorpage.h"
 #include "lvgl_helper.h"
+#include <Preferences.h>
 
 namespace uc2ui_motorpage
 {
@@ -44,6 +45,25 @@ namespace uc2ui_motorpage
 
     void (*updateMotorSpeedListner)(int motor, int speed);
     void (*moveMotorStepsListner)(int motor, int steps);
+
+    // Position storage variables
+    static Preferences preferences;
+    static float currentX = 0.0f;
+    static float currentY = 0.0f;
+    static float currentZ = 0.0f;
+    static lv_obj_t *positionsContainer = nullptr;
+    static lv_obj_t *positionsList = nullptr;
+    static lv_obj_t *currentPosLabel = nullptr;
+    static void (*goToPositionListener)(float x, float y, float z) = nullptr;
+    
+    typedef struct {
+        float x;
+        float y; 
+        float z;
+        char name[32];
+    } SavedPosition;
+    
+    const int MAX_POSITIONS = 20;
 
     void setUpdateMotorSpeedListner(void updateMotorSpeed(int motor, int speed))
     {
@@ -242,6 +262,10 @@ void joyButtonEventListner(lv_event_t *e)
         // Tab 2: Step movements
         lv_obj_t *step_tab = lv_tabview_add_tab(motor_tabview, "Steps");
         initStepUI(step_tab);
+        
+        // Tab 3: Position storage
+        lv_obj_t *positions_tab = lv_tabview_add_tab(motor_tabview, "Positions");
+        initPositionsUI(positions_tab);
     }
 
     void initJoystickUI(lv_obj_t *container)
@@ -553,5 +577,275 @@ void joyButtonEventListner(lv_event_t *e)
         if (moveMotorStepsListner != nullptr) {
             moveMotorStepsListner(motor, step);
         }
+    }
+
+    // Position management functions
+    static void goto_position_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            int index = (int)(intptr_t)lv_event_get_user_data(e);
+            goToStoredPosition(index);
+        }
+    }
+    
+    static void delete_position_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            int index = (int)(intptr_t)lv_event_get_user_data(e);
+            deletePosition(index);
+        }
+    }
+    
+    static void save_current_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            saveCurrentPosition();
+        }
+    }
+    
+    static void delete_all_cb(lv_event_t *e)
+    {
+        if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+            deleteAllPositions();
+        }
+    }
+
+    void setGoToPositionListener(void goToPosition(float x, float y, float z))
+    {
+        goToPositionListener = goToPosition;
+    }
+
+    void updateCurrentPosition(float x, float y, float z)
+    {
+        currentX = x;
+        currentY = y;
+        currentZ = z;
+        
+        // Update current position display
+        if (currentPosLabel != nullptr) {
+            char posText[64];
+            snprintf(posText, sizeof(posText), "Current: X:%.2f Y:%.2f Z:%.2f", x, y, z);
+            lv_label_set_text(currentPosLabel, posText);
+        }
+    }
+
+    void refreshPositionsList()
+    {
+        if (positionsList == nullptr) return;
+        
+        // Clear existing list items
+        lv_obj_clean(positionsList);
+        
+        preferences.begin("positions", false);
+        int count = preferences.getInt("count", 0);
+        
+        for (int i = 0; i < count && i < MAX_POSITIONS; i++) {
+            char key[16];
+            snprintf(key, sizeof(key), "pos_%d", i);
+            
+            size_t size = preferences.getBytesLength(key);
+            if (size == sizeof(SavedPosition)) {
+                SavedPosition pos;
+                preferences.getBytes(key, &pos, sizeof(SavedPosition));
+                
+                // Create list item
+                lv_obj_t *item = lv_obj_create(positionsList);
+                lv_obj_set_size(item, lv_pct(95), 60);
+                lv_obj_set_flex_flow(item, LV_FLEX_FLOW_ROW);
+                lv_obj_set_flex_align(item, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+                lv_obj_set_style_pad_all(item, 5, 0);
+                
+                // Position info label
+                lv_obj_t *info_label = lv_label_create(item);
+                char info_text[64];
+                snprintf(info_text, sizeof(info_text), "%s\nX:%.2f Y:%.2f Z:%.2f", pos.name, pos.x, pos.y, pos.z);
+                lv_label_set_text(info_label, info_text);
+                lv_obj_set_style_text_font(info_label, &lv_font_montserrat_12, 0);
+                
+                // Button container
+                lv_obj_t *btn_container = lv_obj_create(item);
+                lv_obj_set_size(btn_container, 120, 50);
+                lv_obj_set_flex_flow(btn_container, LV_FLEX_FLOW_ROW);
+                lv_obj_set_flex_align(btn_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+                lv_obj_set_style_border_width(btn_container, 0, 0);
+                lv_obj_set_style_bg_opa(btn_container, 0, 0);
+                lv_obj_set_style_pad_all(btn_container, 2, 0);
+                
+                // Go To button
+                lv_obj_t *goto_btn = lv_btn_create(btn_container);
+                lv_obj_set_size(goto_btn, 50, 40);
+                lv_obj_t *goto_label = lv_label_create(goto_btn);
+                lv_label_set_text(goto_label, LV_SYMBOL_PLAY);
+                lv_obj_center(goto_label);
+                lv_obj_add_event_cb(goto_btn, goto_position_cb, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+                
+                // Delete button
+                lv_obj_t *delete_btn = lv_btn_create(btn_container);
+                lv_obj_set_size(delete_btn, 50, 40);
+                lv_obj_set_style_bg_color(delete_btn, lv_color_hex(0xFF4444), 0);
+                lv_obj_t *delete_label = lv_label_create(delete_btn);
+                lv_label_set_text(delete_label, LV_SYMBOL_TRASH);
+                lv_obj_center(delete_label);
+                lv_obj_add_event_cb(delete_btn, delete_position_cb, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+            }
+        }
+        preferences.end();
+    }
+
+    void saveCurrentPosition()
+    {
+        preferences.begin("positions", false);
+        int count = preferences.getInt("count", 0);
+        
+        if (count >= MAX_POSITIONS) {
+            preferences.end();
+            return; // List is full
+        }
+        
+        SavedPosition pos;
+        pos.x = currentX;
+        pos.y = currentY;
+        pos.z = currentZ;
+        snprintf(pos.name, sizeof(pos.name), "Pos %d", count + 1);
+        
+        char key[16];
+        snprintf(key, sizeof(key), "pos_%d", count);
+        preferences.putBytes(key, &pos, sizeof(SavedPosition));
+        preferences.putInt("count", count + 1);
+        preferences.end();
+        
+        refreshPositionsList();
+    }
+
+    void deletePosition(int index)
+    {
+        preferences.begin("positions", false);
+        int count = preferences.getInt("count", 0);
+        
+        if (index >= 0 && index < count) {
+            // Shift all positions after the deleted one
+            for (int i = index; i < count - 1; i++) {
+                char oldKey[16], newKey[16];
+                snprintf(oldKey, sizeof(oldKey), "pos_%d", i + 1);
+                snprintf(newKey, sizeof(newKey), "pos_%d", i);
+                
+                size_t size = preferences.getBytesLength(oldKey);
+                if (size == sizeof(SavedPosition)) {
+                    SavedPosition pos;
+                    preferences.getBytes(oldKey, &pos, sizeof(SavedPosition));
+                    preferences.putBytes(newKey, &pos, sizeof(SavedPosition));
+                }
+            }
+            
+            // Remove the last position and update count
+            char lastKey[16];
+            snprintf(lastKey, sizeof(lastKey), "pos_%d", count - 1);
+            preferences.remove(lastKey);
+            preferences.putInt("count", count - 1);
+        }
+        preferences.end();
+        
+        refreshPositionsList();
+    }
+
+    void deleteAllPositions()
+    {
+        preferences.begin("positions", false);
+        int count = preferences.getInt("count", 0);
+        
+        // Remove all position entries
+        for (int i = 0; i < count; i++) {
+            char key[16];
+            snprintf(key, sizeof(key), "pos_%d", i);
+            preferences.remove(key);
+        }
+        preferences.putInt("count", 0);
+        preferences.end();
+        
+        refreshPositionsList();
+    }
+
+    void goToStoredPosition(int index)
+    {
+        preferences.begin("positions", false);
+        char key[16];
+        snprintf(key, sizeof(key), "pos_%d", index);
+        
+        size_t size = preferences.getBytesLength(key);
+        if (size == sizeof(SavedPosition)) {
+            SavedPosition pos;
+            preferences.getBytes(key, &pos, sizeof(SavedPosition));
+            
+            if (goToPositionListener != nullptr) {
+                goToPositionListener(pos.x, pos.y, pos.z);
+            }
+        }
+        preferences.end();
+    }
+
+    void initPositionsUI(lv_obj_t *container)
+    {
+        positionsContainer = lv_obj_create(container);
+        lv_obj_set_size(positionsContainer, lv_pct(100), lv_pct(100));
+        lv_obj_set_flex_flow(positionsContainer, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(positionsContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_all(positionsContainer, 10, 0);
+        
+        // Title
+        lv_obj_t *title = lv_label_create(positionsContainer);
+        lv_label_set_text(title, "Position Storage");
+        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+        lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_width(title, lv_pct(100));
+        
+        // Current position display
+        currentPosLabel = lv_label_create(positionsContainer);
+        lv_label_set_text(currentPosLabel, "Current: X:0.00 Y:0.00 Z:0.00");
+        lv_obj_set_style_text_font(currentPosLabel, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_align(currentPosLabel, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_width(currentPosLabel, lv_pct(100));
+        lv_obj_set_style_bg_color(currentPosLabel, lv_color_hex(0x444444), 0);
+        lv_obj_set_style_bg_opa(currentPosLabel, 255, 0);
+        lv_obj_set_style_text_color(currentPosLabel, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_set_style_pad_all(currentPosLabel, 5, 0);
+        lv_obj_set_style_radius(currentPosLabel, 5, 0);
+        
+        // Control buttons container
+        lv_obj_t *btn_container = lv_obj_create(positionsContainer);
+        lv_obj_set_size(btn_container, lv_pct(90), 50);
+        lv_obj_set_flex_flow(btn_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(btn_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_border_width(btn_container, 0, 0);
+        lv_obj_set_style_bg_opa(btn_container, 0, 0);
+        
+        // Save Current button
+        lv_obj_t *save_btn = lv_btn_create(btn_container);
+        lv_obj_set_size(save_btn, 120, 40);
+        lv_obj_set_style_bg_color(save_btn, lv_color_hex(0x44AA44), 0);
+        lv_obj_t *save_label = lv_label_create(save_btn);
+        lv_label_set_text(save_label, "Save Current");
+        lv_obj_center(save_label);
+        lv_obj_add_event_cb(save_btn, save_current_cb, LV_EVENT_CLICKED, nullptr);
+        
+        // Delete All button
+        lv_obj_t *delete_all_btn = lv_btn_create(btn_container);
+        lv_obj_set_size(delete_all_btn, 120, 40);
+        lv_obj_set_style_bg_color(delete_all_btn, lv_color_hex(0xAA4444), 0);
+        lv_obj_t *delete_all_label = lv_label_create(delete_all_btn);
+        lv_label_set_text(delete_all_label, "Delete All");
+        lv_obj_center(delete_all_label);
+        lv_obj_add_event_cb(delete_all_btn, delete_all_cb, LV_EVENT_CLICKED, nullptr);
+        
+        // Positions list
+        positionsList = lv_obj_create(positionsContainer);
+        lv_obj_set_size(positionsList, lv_pct(95), lv_pct(60));
+        lv_obj_set_flex_flow(positionsList, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(positionsList, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_all(positionsList, 5, 0);
+        lv_obj_add_flag(positionsList, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scroll_dir(positionsList, LV_DIR_VER);
+        
+        // Load and display existing positions
+        refreshPositionsList();
     }
 }

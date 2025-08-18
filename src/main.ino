@@ -37,6 +37,7 @@ void setup()
   uc2ui_motorpage::setMoveMotorStepsListner(SerialApi::moveMotorSteps);
   uc2ui_ledpage::setenableLedListner(SerialApi::setLedOn);
   uc2ui_motorpage::setDriveXYMotorListner(SerialApi::driveMotorXYForever);
+  uc2ui_motorpage::setGoToPositionListener(SerialApi::goToPosition);
   
   // Set up new objective page handlers
   uc2ui_objectivepage::setOnSlotChangeListener(SerialApi::setObjectiveSlot);
